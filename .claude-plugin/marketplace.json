@@ -5,15 +5,15 @@
     "email": "2.harim.choi@gmail.com"
   },
   "metadata": {
-    "description": "Personal Claude Code setup: anonymity hook, multi-track priors, DSSP-aligned skills (ECC + ForgeCode + GEPA + Live-SWE patterns)",
-    "version": "0.3.0"
+    "description": "Personal Claude Code setup: ECC-grade operator surface with multi-tier deterministic routing (lifecycle hooks + skillOverrides + slash commands + task-typed CLAUDE.md). DSSP score ~2.5/12.",
+    "version": "0.4.0"
   },
   "plugins": [
     {
       "name": "harim-base",
       "source": "./plugins/harim-base",
-      "description": "Base plugin: anonymity hook + statusline + 6 user-level skills (dssp-audit, gepa-reflection, live-swe-reflection, monogram-commit, ecc-prevent-mode, forgecode-recover-mode)",
-      "version": "0.3.0",
+      "description": "ECC-grade operator surface: anonymity + monogram lifecycle hook, doom-loop detection, pending-todos gate, verifier-runner subagent, 6 skills with skillOverrides routing, 3 slash commands, 3 path-scoped rules, statusline.",
+      "version": "0.4.0",
       "category": "personal-setup",
       "license": "MIT"
     }

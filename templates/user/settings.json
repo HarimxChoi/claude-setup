@@ -40,5 +40,11 @@
   "spinnerTipsEnabled": false,
   "includeCoAuthoredBy": false,
   "cleanupPeriodDays": 0,
-  "includeGitInstructions": true
+  "includeGitInstructions": true,
+  "skillOverrides": {
+    "monogram-commit": "user-invocable-only",
+    "forgecode-recover-mode": "user-invocable-only",
+    "live-swe-reflection": "name-only",
+    "ecc-prevent-mode": "name-only"
+  }
 }

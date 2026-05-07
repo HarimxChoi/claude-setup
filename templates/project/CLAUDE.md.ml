@@ -27,9 +27,15 @@ Production ML system. Live business KPI; daily iteration. Examples: government b
 - Pushing model artifacts to git (use S3 / artifact store).
 - Editing `data/production/` without explicit confirmation.
 
-## Recommended skill triggers
-- Stuck in tuning loop → `live-swe-reflection`
-- Audit of a candidate model → `dssp-audit`
-- Runtime error / repeated failure → `forgecode-recover-mode`
-- Pre-deploy CI design → `ecc-prevent-mode`
-- Commit / PR → `monogram-commit`
+## Skill activation policy
+
+| Skill | Tier | When |
+|---|---|---|
+| `monogram-commit` | T1 lifecycle | every `git commit` (auto via PreToolUse hook) |
+| `forgecode-recover-mode` patterns | T1 lifecycle | tool errors, doom-loop, pending todos (auto via hooks) |
+| `dssp-audit` | T3 explicit | invoke via `/audit` when evaluating a candidate model architecture |
+| `live-swe-reflection` | T2 priors | stuck in tuning loop / repeated failure |
+| `ecc-prevent-mode` | T2 priors | designing pre-deploy CI gate / governance |
+| `gepa-reflection` | T3 explicit | invoke via `/reflect` when refining prompt with ≥3 failures |
+
+Track A primary triggers: `dssp-audit` (model architecture eval) + `ecc-prevent-mode` (CI gate design).

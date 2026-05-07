@@ -26,8 +26,14 @@ Public-release npm/pip package (e.g., MCP server, scraper, CLI tool). Production
 - Hardcoded credentials. Use env vars or config files.
 - Releasing major version without 24h soak on `next` tag.
 
-## Recommended skill triggers
-- Commit / PR → `monogram-commit`
-- Stuck debug loop → `live-swe-reflection`
-- Runtime error handling → `forgecode-recover-mode`
-- Release CI gate → `ecc-prevent-mode`
+## Skill activation policy
+
+| Skill | Tier | When |
+|---|---|---|
+| `monogram-commit` | T1 lifecycle | every `git commit` (auto via PreToolUse hook) |
+| `forgecode-recover-mode` patterns | T1 lifecycle | tool errors, doom-loop, pending todos (auto) |
+| `ecc-prevent-mode` | T2 priors | release CI gate design |
+| `live-swe-reflection` | T2 priors | stuck debug loop |
+| `dssp-audit` | T3 explicit | rare for tooling track; invoke via `/audit` if auditing other tools |
+
+Track D primary triggers: `ecc-prevent-mode` (release CI) + `monogram-commit` (npm release commit hygiene).

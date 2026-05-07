@@ -1,9 +1,16 @@
 #!/usr/bin/env bash
-# strip-claude-attribution: PreToolUse hook
-# Blocks Bash commands that would leak Claude/Anthropic identity in git history.
-# Reason: privacy preference — commit/branch/PR history must look human-authored.
+# strip-claude-attribution: PreToolUse hook (Bash matcher)
+# Two roles:
+#   1. BLOCK Bash commands that leak Claude/Anthropic identity in git history.
+#   2. INJECT monogram-commit skill guidance via additionalContext on `git commit`
+#      (Tier 1 deterministic skill activation — bypasses LLM-router 50% ceiling).
+#
+# HOOK_PROFILE env var: "minimal" (skip all checks) | "standard" (default) | "strict"
 
 set -euo pipefail
+
+PROFILE="${HOOK_PROFILE:-standard}"
+[[ "$PROFILE" == "minimal" ]] && exit 0   # fast-iteration escape hatch
 
 INPUT=$(cat)
 
@@ -71,6 +78,21 @@ if echo "$FLAT" | grep -qiE 'gh[[:space:]]+pr[[:space:]]+create.*(co-authored-by
 Remove the footer/co-author lines from --body before retrying.
 EOF
   exit 2
+fi
+
+# Tier 1 deterministic skill activation:
+# When user is about to run `git commit`, inject monogram-commit guidance.
+# This compensates for LLM-router 50% activation ceiling on the most-used skill.
+# Only emit JSON when actually injecting — silent exit otherwise (avoid #34713 false-error).
+if echo "$FLAT" | grep -qiE 'git[[:space:]]+commit'; then
+  cat <<'EOF'
+{
+  "hookSpecificOutput": {
+    "hookEventName": "PreToolUse",
+    "additionalContext": "[monogram-commit auto-activate] Format: `<category>: <short-noun-phrase>`. Categories: setup/feat/fix/refactor/research/experiment/docs/chore. ≤72 chars, all lowercase, no past-tense verb starts, no Co-Authored-By/🤖/claude.ai/code. Examples: `fix: kpi total_bidders`, `setup: marketplace auto-register`, `research: 14-agent corpus update`."
+  }
+}
+EOF
 fi
 
 exit 0

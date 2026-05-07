@@ -27,9 +27,15 @@ Academic paper / research corpus. Pre-registered designs, reproducible experimen
 - Skipping FLAG verification before promoting a claim to a design doc.
 - Committing without reproducible script (every figure has a generator).
 
-## Recommended skill triggers
-- New agent in corpus → `dssp-audit` (deep)
-- Improving a prompt or instruction → `gepa-reflection`
-- Stuck in circular reasoning → `live-swe-reflection`
-- Commit / paper section → `monogram-commit`
-- CI for paper-build → `ecc-prevent-mode`
+## Skill activation policy
+
+| Skill | Tier | When |
+|---|---|---|
+| `monogram-commit` | T1 lifecycle | every `git commit` (auto via PreToolUse hook) |
+| `forgecode-recover-mode` patterns | T1 lifecycle | tool errors, doom-loop, pending todos (auto) |
+| `dssp-audit` | T3 explicit | invoke via `/audit` for new corpus agents |
+| `gepa-reflection` | T3 explicit | invoke via `/reflect` for prompt iteration with ≥3 failures |
+| `live-swe-reflection` | T2 priors | stuck in circular reasoning |
+| `ecc-prevent-mode` | T2 priors | CI for paper-build / pre-registration discipline |
+
+Track B primary triggers: `dssp-audit` (deep, full 6-step) + `gepa-reflection` (instruction iteration).

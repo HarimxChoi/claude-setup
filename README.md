@@ -1,6 +1,8 @@
 # claude-setup
 
-Portable Claude Code setup. Drop on any device, run install, get a consistent agent environment with hook-enforced anonymity, 6 user-level skills, and DSSP-aligned multi-track priors.
+Portable Claude Code setup — ECC-grade operator surface with multi-tier deterministic routing. DSSP score ~2.5/12 (matches ForgeCode operator-surface tier).
+
+**v0.4.0** — adds doom-loop detection, pending-todos completion gate, verifier-runner subagent, skillOverrides routing, slash commands, and lifecycle skill activation.
 
 [**한국어 README →**](./README.ko.md)
 
@@ -36,26 +38,36 @@ Portable Claude Code setup. Drop on any device, run install, get a consistent ag
 - `~/.claude/settings.json` — permissions baseline (deny `rm -rf`, `curl`, `sudo`, `pip install`, `npm publish`, `.env` reads), narrow allow list, `includeCoAuthoredBy: false`, statusLine.
 - `~/.claude/CLAUDE.md` — short response style, smallest-diff edits, KR-EN bilingual, Monogram commit hygiene.
 
-### Layer 4 — Anonymity hook (deterministic enforcement)
-`harim-base/hooks/strip-claude-attribution.sh` BLOCKS:
-- `git commit` with `Co-Authored-By: Claude`, `🤖 Generated`, `claude.ai/code`, `noreply@anthropic.com`
-- `git branch / checkout -b / push origin` with `claude-code/`, `anthropic/`, `claude/`
-- `gh pr create` with the same attribution patterns
+### Layer 4 — Three deterministic hooks
 
-Hook uses Node (Claude Code prereq) for JSON parse — falls back to jq if needed; never silently fail-open.
-
-### Layer 2 — 6 user-level skills
-
-| Skill | Type | Triggered when |
+| Hook | Event | Role |
 |---|---|---|
-| `dssp-audit` | capability uplift | auditing an agent / scoring 12-branch / RL spine activation |
-| `gepa-reflection` | capability uplift | refining a prompt with ≥3 failed examples + feedback |
-| `live-swe-reflection` | capability uplift | agent stuck in repetitive loop (single-sentence injection) |
-| `monogram-commit` | encoded preference | drafting commit / branch / PR title |
-| `ecc-prevent-mode` | capability uplift | designing CI gates, anti-pattern lists, hook profiles, install manifests |
-| `forgecode-recover-mode` | capability uplift | runtime errors, doom-loop detection, pending-todos gates |
+| `strip-claude-attribution.sh` | PreToolUse Bash | (1) BLOCKS attribution leakage in git commit / branch / push / `gh pr create` (2) INJECTS monogram-commit guidance on every `git commit` (Tier 1 lifecycle skill activation) |
+| `doom-loop-detect.sh` | PostToolUse all | Logs action signatures to JSONL; on `[A,A,A]` 3-rep or `[A,B,C][A,B,C]` cycle, injects reflection. Silent stdout when no pattern (#34713 mitigation). |
+| `pending-todos-gate.sh` | Stop | Scans transcript for latest TodoWrite; blocks termination via `decision:block` JSON if pending items exist. Uses `stop_hook_active` flag to prevent infinite loops. |
 
-Skills auto-discovered by Claude Code from `plugins/harim-base/skills/<name>/SKILL.md`.
+`HOOK_PROFILE` env var: `"minimal"` (skip all) / `"standard"` (default) / `"strict"`. All hooks use Node for JSON parse (Claude Code prereq).
+
+### Layer 2 — 6 skills with multi-tier deterministic routing
+
+| Skill | Tier | skillOverride | Activation |
+|---|---|---|---|
+| `monogram-commit` | T1 lifecycle | `user-invocable-only` | Auto on `git commit` via PreToolUse hook (100%); `/commit` for explicit |
+| `forgecode-recover-mode` | T1 lifecycle | `user-invocable-only` | Auto via doom-loop hook + pending-todos hook (100%); skill body for documentation |
+| `live-swe-reflection` | T2 priors | `name-only` | Mentioned in project CLAUDE.md; description short enough |
+| `ecc-prevent-mode` | T2 priors | `name-only` | Mentioned in project CLAUDE.md (CI / governance work) |
+| `dssp-audit` | T3 explicit + T4 auto | `on` | `/audit` slash command + auto-discovery |
+| `gepa-reflection` | T3 explicit + T4 auto | `on` | `/reflect` slash command + auto-discovery |
+
+**Multi-tier rationale**: LLM-as-router has ~50% activation ceiling (devty 2026 empirical study). Multi-tier combination (T1 lifecycle hooks + T2 task-typed CLAUDE.md + T3 slash commands) achieves effective ~85% coverage without the latency / #34713 risk of forced-eval UserPromptSubmit hooks.
+
+### Layer 2 — verifier-runner subagent
+
+`plugins/harim-base/agents/verifier-runner.md` — Haiku-based subagent for high-noise output isolation. Runs tests/lint/type-checks, returns ≤500-char pass/fail summary. Read-only.
+
+### Layer 2 — 3 slash commands
+
+`plugins/harim-base/commands/{audit, reflect, commit}.md` — explicit invocation paths for the T3 skills.
 
 ### Layer 1 (project) — 4 CLAUDE.md templates
 

@@ -81,7 +81,7 @@ console.log("  enabled plugin:", ref);
 NODE_EOF
 
 # 6. configure statusLine pointing to the harim-base script
-echo "[6/6] configuring statusLine..."
+echo "[6/7] configuring statusLine..."
 SCRIPT_PATH="$REPO_DIR_FWD/plugins/harim-base/scripts/statusline.sh"
 SETTINGS_PATH="$CLAUDE_DIR/settings.json" STATUSLINE_PATH="$SCRIPT_PATH" node - <<'NODE_EOF'
 const fs = require('fs');
@@ -91,6 +91,23 @@ const s = JSON.parse(fs.readFileSync(p, 'utf8'));
 s.statusLine = { type: "command", command: `bash "${sp}"`, padding: 1 };
 fs.writeFileSync(p, JSON.stringify(s, null, 2) + '\n');
 console.log("  statusLine ->", sp);
+NODE_EOF
+
+# 7. ensure skillOverrides present (template ships them, but re-merge in case user has older settings)
+echo "[7/7] ensuring skillOverrides..."
+SETTINGS_PATH="$CLAUDE_DIR/settings.json" node - <<'NODE_EOF'
+const fs = require('fs');
+const p = process.env.SETTINGS_PATH;
+const s = JSON.parse(fs.readFileSync(p, 'utf8'));
+const defaults = {
+  "monogram-commit": "user-invocable-only",
+  "forgecode-recover-mode": "user-invocable-only",
+  "live-swe-reflection": "name-only",
+  "ecc-prevent-mode": "name-only"
+};
+s.skillOverrides = Object.assign({}, defaults, s.skillOverrides || {});
+fs.writeFileSync(p, JSON.stringify(s, null, 2) + '\n');
+console.log("  skillOverrides:", Object.keys(s.skillOverrides).length, "entries");
 NODE_EOF
 
 cat <<EOF
