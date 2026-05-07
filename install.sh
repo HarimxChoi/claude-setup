@@ -70,11 +70,24 @@ const fs = require('fs');
 const p = process.env.SETTINGS_PATH;
 const repo = process.env.REPO_DIR;
 const s = JSON.parse(fs.readFileSync(p, 'utf8'));
-s.pluginMarketplaces = s.pluginMarketplaces || [];
-if (!s.pluginMarketplaces.includes(repo)) s.pluginMarketplaces.push(repo);
-s.enabledPlugins = s.enabledPlugins || [];
+
+// Schema-compliant enabledPlugins (object form, not array — array silently invalidates)
 const ref = "harim-base@harim-marketplace";
-if (!s.enabledPlugins.includes(ref)) s.enabledPlugins.push(ref);
+if (Array.isArray(s.enabledPlugins)) {
+  const obj = {};
+  for (const e of s.enabledPlugins) obj[e] = true;
+  s.enabledPlugins = obj;
+}
+s.enabledPlugins = s.enabledPlugins || {};
+s.enabledPlugins[ref] = true;
+
+// Schema-compliant marketplace via extraKnownMarketplaces (not deprecated pluginMarketplaces)
+s.extraKnownMarketplaces = s.extraKnownMarketplaces || {};
+s.extraKnownMarketplaces["harim-marketplace"] = {
+  source: { source: "directory", path: repo }
+};
+delete s.pluginMarketplaces;
+
 fs.writeFileSync(p, JSON.stringify(s, null, 2) + '\n');
 console.log("  registered marketplace:", repo);
 console.log("  enabled plugin:", ref);

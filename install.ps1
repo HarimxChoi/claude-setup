@@ -62,7 +62,7 @@ Write-Host "[5/9] registering harim-marketplace + enabling harim-base..."
 $settingsPath = Join-Path $ClaudeDir "settings.json"
 $env:SETTINGS_PATH = $settingsPath
 $env:REPO_DIR_FWD = $RepoDir
-node -e "const fs=require('fs');const p=process.env.SETTINGS_PATH;const repo=process.env.REPO_DIR_FWD;const s=JSON.parse(fs.readFileSync(p,'utf8'));s.pluginMarketplaces=s.pluginMarketplaces||[];if(!s.pluginMarketplaces.includes(repo))s.pluginMarketplaces.push(repo);s.enabledPlugins=s.enabledPlugins||[];const ref='harim-base@harim-marketplace';if(!s.enabledPlugins.includes(ref))s.enabledPlugins.push(ref);fs.writeFileSync(p,JSON.stringify(s,null,2)+'\n');console.log('  registered:',repo);console.log('  enabled:',ref);"
+node -e "const fs=require('fs');const p=process.env.SETTINGS_PATH;const repo=process.env.REPO_DIR_FWD;const s=JSON.parse(fs.readFileSync(p,'utf8'));const ref='harim-base@harim-marketplace';if(Array.isArray(s.enabledPlugins)){const o={};for(const e of s.enabledPlugins)o[e]=true;s.enabledPlugins=o;}s.enabledPlugins=s.enabledPlugins||{};s.enabledPlugins[ref]=true;s.extraKnownMarketplaces=s.extraKnownMarketplaces||{};s.extraKnownMarketplaces['harim-marketplace']={source:{source:'directory',path:repo}};delete s.pluginMarketplaces;fs.writeFileSync(p,JSON.stringify(s,null,2)+'\n');console.log('  registered:',repo);console.log('  enabled:',ref);"
 
 # 6. configure statusLine (use FULL bash path — Desktop App uses system PATH)
 Write-Host "[6/9] configuring statusLine..."
