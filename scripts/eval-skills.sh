@@ -13,6 +13,9 @@
 #   2. cd $HOME/wshobson-agents/plugins/plugin-eval
 #      uv sync --extra llm   # or --extra api if you prefer ANTHROPIC_API_KEY
 #   3. authenticate (Claude Code Max plan or ANTHROPIC_API_KEY env)
+#   4. SDK ≥0.1.50 patch: ResultMessage.content removed; we patch judge.py +
+#      monte_carlo.py to use ResultMessage.result instead. See
+#      docs/04-wshobson-dssp.md §11.5 for diff.
 
 set -euo pipefail
 
@@ -22,6 +25,7 @@ PLUGIN_EVAL_DIR="${PLUGIN_EVAL_DIR:-$HOME/wshobson-agents/plugins/plugin-eval}"
 SKILLS_DIR="${SKILLS_DIR:-$HOME/.claude/skills}"
 OUT_DIR="${OUT_DIR:-$HOME/.claude/harim-base/eval-reports}"
 AUTH="${AUTH:-max}"      # max | api-key
+export PYTHONIOENCODING=utf-8   # Windows cp949 fix
 
 if [[ ! -d "$PLUGIN_EVAL_DIR" ]]; then
   echo "ERROR: PluginEval not found at $PLUGIN_EVAL_DIR" >&2
@@ -39,8 +43,8 @@ echo "# harim-base skill eval — $TS" > "$SUMMARY"
 echo "" >> "$SUMMARY"
 echo "depth: $DEPTH | auth: $AUTH | plugin-eval: $PLUGIN_EVAL_DIR" >> "$SUMMARY"
 echo "" >> "$SUMMARY"
-echo "| skill | composite | grade | badge | confidence |" >> "$SUMMARY"
-echo "|---|---|---|---|---|" >> "$SUMMARY"
+echo "| skill | composite | badge | confidence |" >> "$SUMMARY"
+echo "|---|---|---|---|" >> "$SUMMARY"
 
 skills=()
 if [[ -n "$ONLY" ]]; then
@@ -65,12 +69,11 @@ for skill in "${skills[@]}"; do
       --auth "$AUTH" \
       > "$report" || { echo "  FAILED — see $report" >&2; continue; }
 
-  # extract one-line summary
-  composite=$(grep -m1 -oE '\*\*Score:\*\* [0-9.]+' "$report" | awk '{print $2}' || echo "?")
-  grade=$(grep -m1 -oE '\*\*Grade:\*\* [A-F][+-]?' "$report" | awk '{print $2}' || echo "?")
-  badge=$(grep -m1 -oE '\*\*Badge:\*\* [A-Za-z_]+' "$report" | awk '{print $2}' || echo "?")
-  conf=$(grep -m1 -oE '\*\*Confidence:\*\* [A-Za-z+]+' "$report" | awk '{print $2}' || echo "?")
-  echo "| $skill | $composite | $grade | $badge | $conf |" >> "$SUMMARY"
+  # extract one-line summary from the markdown report's score table
+  composite=$(grep -m1 -oE '\| Score \| \*\*[0-9.]+/100\*\* \|' "$report" | grep -oE '[0-9.]+/100' | head -1 || echo "?")
+  conf=$(grep -m1 -oE '\| Confidence \| [A-Za-z+]+ \|' "$report" | awk -F'\\| ' '{print $3}' | tr -d '|' | xargs || echo "?")
+  badge=$(grep -m1 -oE '\| Badge \| [A-Za-z_ ]+\|' "$report" | awk -F'\\| ' '{print $3}' | tr -d '|' | xargs || echo "?")
+  echo "| $skill | $composite | $badge | $conf |" >> "$SUMMARY"
 done
 
 echo ""

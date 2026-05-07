@@ -1,6 +1,6 @@
 ---
 name: live-swe-reflection
-description: Inject a single reflection sentence to break repeated-failure loops or amplify strong-LLM problem-solving. USE WHEN agent has tried similar approach 2+ times without progress, before declaring task complete on a non-trivial fix, or after every observation in a long-running session. Implements the +22.6 pp lift (Claude 4.5 Sonnet on SWE-Bench Verified) from Live-SWE-agent (arxiv 2511.13646). WARNING for weak models: -68 pp on GPT-5-Nano per paper Table 5.
+description: 'Inject a single reflection sentence to break repeated-failure loops or amplify strong-LLM problem-solving. USE WHEN agent has tried similar approach 2+ times without progress, before declaring task complete on a non-trivial fix, or after every observation in a long-running session. Implements the +22.6 pp lift (Claude 4.5 Sonnet on SWE-Bench Verified) from Live-SWE-agent (arxiv 2511.13646). WARNING for weak models — -68 pp on GPT-5-Nano per paper Table 5.'
 ---
 
 # Live-SWE-agent reflection sentence

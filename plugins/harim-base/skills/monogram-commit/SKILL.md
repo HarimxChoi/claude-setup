@@ -1,6 +1,6 @@
 ---
 name: monogram-commit
-description: Generate short noun-centric commit messages, branch names, and PR titles in Monogram style. USE WHEN drafting a git commit message, naming a branch, drafting a pull request title, or summarizing a change. Format is "category: noun-slug" (e.g., "fix: kpi total_bidders", "setup: marketplace auto-register"). Pairs with the harim-base anonymity hook.
+description: 'Generate short noun-centric commit messages, branch names, and PR titles in Monogram style. USE WHEN drafting a git commit message, naming a branch, drafting a pull request title, or summarizing a change. Format is `category - noun-slug` (e.g., `fix - kpi total_bidders`, `setup - marketplace auto-register`). Pairs with the harim-base anonymity hook.'
 ---
 
 # Monogram-style commit messages

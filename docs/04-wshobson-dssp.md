@@ -400,7 +400,74 @@ The `ORCHESTRATION_RUBRIC` and `SCOPE_RUBRIC` 5-point anchored format is indepen
 
 Currently my harim-base uses Sonnet by default + Haiku for verifier-runner. Worth explicitly tagging skills with model tier in SKILL.md frontmatter (`model: opus|sonnet|haiku`). Defer until v0.7 — needs design.
 
-### 11.4 NOT lifted
+### 11.5 SDK breaking-change patch (required as of 2026-05)
+
+PluginEval `judge.py` and `monte_carlo.py` extract response text via
+`getattr(message, "content", [])` on `ResultMessage`. claude-agent-sdk ≥0.1.50
+**removed `.content` from `ResultMessage`** — the final text now lives at
+`ResultMessage.result` directly. Without the patch, every LLM call returns
+empty string → JSON parse fallback → all judge dimensions collapse to 0.5
+("raw" fallback path). MC simulations report `activated=False` for every run.
+
+**Verified by direct SDK probe** (2026-05-07):
+```
+TYPE: ResultMessage
+ATTRS: ['duration_api_ms', 'duration_ms', 'is_error', 'num_turns', 'result',
+        'session_id', 'stop_reason', 'structured_output', 'subtype',
+        'total_cost_usd', 'usage']
+result attr: PONG
+content: none           # ← removed in newer SDK
+```
+
+**Fix** — both files: replace the per-block iteration with direct `.result`
+access:
+```python
+# OLD (broken)
+if isinstance(message, ResultMessage):
+    for block in getattr(message, "content", []):
+        if hasattr(block, "text"):
+            result_text += block.text
+
+# NEW (works on SDK ≥0.1.50)
+if isinstance(message, ResultMessage):
+    result_text = getattr(message, "result", None) or result_text
+```
+
+In `monte_carlo.py` also fix the usage-token extraction: the SDK now returns a
+dict (not an object), and `total_tokens` is no longer a single field — sum
+`input_tokens + output_tokens` instead. See `scripts/eval-skills.sh` prereq
+note for repro.
+
+### 11.6 Real-world eval result on the harim-base v0.6 corpus
+
+Standard-depth eval (no MC) on the 6 user-level skills, run 2026-05-07 against
+patched plugin-eval. Two passes shown — first uncovered a YAML frontmatter bug
+in 2 skills (description colon-space tripping `yaml.safe_load`), second is
+post-fix (single-quote wrap):
+
+| skill | pre-fix composite | post-fix composite | Δ | badge |
+|---|---|---|---|---|
+| dssp-audit | 67.8 | 67.8 | — | Bronze |
+| ecc-prevent-mode | 66.2 | 66.2 | — | Bronze |
+| forgecode-recover-mode | 56.7 | 56.7 | — | No Badge |
+| gepa-reflection | 58.2 | 58.2 | — | No Badge |
+| **live-swe-reflection** | **35.7** | **57.9** | **+22.2** | No Badge |
+| **monogram-commit** | **58.3** | **77.2** | **+18.9** | **Silver** |
+
+Diagnosis on `live-swe-reflection` 35.7: PluginEval's static analyzer flagged
+two anti-patterns — `EMPTY_DESCRIPTION` (0 chars detected) and `MISSING_TRIGGER`.
+Root cause was a stray `: -` (colon-space-hyphen) in the description that YAML
+interpreted as a nested mapping key, returning empty frontmatter. Same bug on
+`monogram-commit` (had `"category: noun-slug"` patterns inside the unquoted
+description). Fix: wrap entire description in single quotes; replace inline
+`: ` with em-dash or backtick. Lift: 2/6 skills had a silent YAML bug that
+PluginEval surfaced — DSSP UQ.3★★ paid off immediately.
+
+Deep-depth (50 MC runs each, Wilson/bootstrap/Clopper-Pearson CI per skill) is
+the v0.6.1 baseline; results recorded under
+`~/.claude/harim-base/eval-reports/`.
+
+### 11.7 NOT lifted
 
 - **80 specialty plugins / 185 agents catalog** — same verdict as ruflo: decision fatigue > productivity for solo use.
 - **Agent Teams (tmux experimental)** — Desktop unsupported; experimental flag risk.
