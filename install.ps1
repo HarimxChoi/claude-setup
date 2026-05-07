@@ -65,11 +65,16 @@ $env:REPO_DIR_FWD = $RepoDir
 node -e "const fs=require('fs');const p=process.env.SETTINGS_PATH;const repo=process.env.REPO_DIR_FWD;const s=JSON.parse(fs.readFileSync(p,'utf8'));const ref='harim-base@harim-marketplace';if(Array.isArray(s.enabledPlugins)){const o={};for(const e of s.enabledPlugins)o[e]=true;s.enabledPlugins=o;}s.enabledPlugins=s.enabledPlugins||{};s.enabledPlugins[ref]=true;s.extraKnownMarketplaces=s.extraKnownMarketplaces||{};s.extraKnownMarketplaces['harim-marketplace']={source:{source:'directory',path:repo}};delete s.pluginMarketplaces;fs.writeFileSync(p,JSON.stringify(s,null,2)+'\n');console.log('  registered:',repo);console.log('  enabled:',ref);"
 
 # 6. configure statusLine (use FULL bash path — Desktop App uses system PATH)
+# NOTE: JS goes through a temp file rather than `node -e @"..."@`. PowerShell mangles
+# embedded double-quotes when it passes a here-string as a single command-line arg
+# to a native exe, dropping content like '"' (single-double-single) — leaves the JS
+# truncated at `command: ''`. Temp file sidesteps argv quoting entirely.
 Write-Host "[6/9] configuring statusLine..."
 $scriptPath = "$RepoDir/plugins/harim-base/scripts/statusline.sh"
 $env:SETTINGS_PATH = $settingsPath
 $env:STATUSLINE_PATH = $scriptPath
-node -e @"
+$tmpJs = Join-Path $env:TEMP "claude-setup-statusline-$PID.js"
+Set-Content -LiteralPath $tmpJs -Encoding UTF8 -Value @'
 const fs = require('fs');
 const p = process.env.SETTINGS_PATH;
 const sp = process.env.STATUSLINE_PATH;
@@ -81,7 +86,9 @@ s.statusLine = { type: 'command', command: '"' + bashPath + '" "' + sp + '"', pa
 fs.writeFileSync(p, JSON.stringify(s, null, 2) + '\n');
 console.log('  bash:', bashPath);
 console.log('  statusLine ->', sp);
-"@
+'@
+node $tmpJs
+Remove-Item -LiteralPath $tmpJs -Force
 
 # 7. ensure skillOverrides
 Write-Host "[7/9] ensuring skillOverrides..."
@@ -90,10 +97,12 @@ node -e "const fs=require('fs');const p=process.env.SETTINGS_PATH;const s=JSON.p
 
 # 8. inject hooks block with FULL bash path (claude-code issue #22700 — Windows
 #    Desktop App uses system PATH which lacks Git\bin; `bash` resolution fails silently)
+#    Uses temp-file dispatch (same reason as [6/9]).
 Write-Host "[8/9] injecting hooks block into user settings..."
 $env:SETTINGS_PATH = $settingsPath
 $env:REPO_DIR_FWD = $RepoDir
-node -e @"
+$tmpJs = Join-Path $env:TEMP "claude-setup-hooks-$PID.js"
+Set-Content -LiteralPath $tmpJs -Encoding UTF8 -Value @'
 const fs = require('fs');
 const p = process.env.SETTINGS_PATH;
 const repo = process.env.REPO_DIR_FWD;
@@ -109,7 +118,9 @@ s.hooks.Stop = [{ matcher: '', hooks: [mkHook('pending-todos-gate.sh')] }];
 fs.writeFileSync(p, JSON.stringify(s, null, 2) + '\n');
 console.log('  bash:', bashPath);
 console.log('  hooks: PreToolUse + PostToolUse + Stop registered');
-"@
+'@
+node $tmpJs
+Remove-Item -LiteralPath $tmpJs -Force
 
 # 9. deploy skills/agents/commands/rules
 Write-Host "[9/9] deploying skills/agents/commands/rules to user-level..."
