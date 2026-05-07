@@ -5,15 +5,15 @@
     "email": "2.harim.choi@gmail.com"
   },
   "metadata": {
-    "description": "Personal Claude Code setup: ECC-grade operator surface with multi-tier deterministic routing (lifecycle hooks + skillOverrides + slash commands + task-typed CLAUDE.md). DSSP ~3/12.",
-    "version": "0.5.0"
+    "description": "Personal Claude Code setup: ECC-grade operator surface with multi-tier deterministic routing (lifecycle hooks + skillOverrides + slash commands + task-typed CLAUDE.md) + PluginEval-driven UQ.3 measurement. DSSP ~3.5/12.",
+    "version": "0.6.0"
   },
   "plugins": [
     {
       "name": "harim-base",
       "source": "./plugins/harim-base",
-      "description": "ECC-grade operator surface: anonymity + monogram lifecycle hook, doom-loop trace JSONL, pending-todos gate, verifier-runner subagent, 6 skills with skillOverrides routing, 4 slash commands (audit/reflect/commit/skills), 3 path-scoped rules, statusline.",
-      "version": "0.5.0",
+      "description": "ECC-grade operator surface: anonymity + monogram lifecycle hook, doom-loop trace JSONL, pending-todos gate, verifier-runner subagent, 6 skills with skillOverrides routing, 4 slash commands (audit/reflect/commit/skills), 3 path-scoped rules, statusline, PluginEval skill-quality wrapper.",
+      "version": "0.6.0",
       "category": "personal-setup",
       "license": "MIT"
     }

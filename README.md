@@ -1,6 +1,8 @@
 # claude-setup
 
-Portable Claude Code setup — ECC-grade operator surface with multi-tier deterministic routing. DSSP ~3/12 (ForgeCode operator-surface tier + DT.7 / DRO.8 increments after ruflo audit).
+Portable Claude Code setup — ECC-grade operator surface with multi-tier deterministic routing + PluginEval-driven UQ.3 measurement. DSSP ~3.5/12 (ForgeCode operator-surface tier + DT.7 / DRO.8 / UQ.3 increments after ruflo and wshobson/agents audits).
+
+**v0.6.0** — UQ.3 lift: external dep on wshobson/agents `plugin-eval` for skill-quality scoring (Wilson CI / bootstrap CI / Clopper-Pearson CI). New `scripts/eval-skills.sh` wrapper runs `uv run plugin-eval score` against the 6 user-level skills with markdown summary output.
 
 **v0.5.0** — triaged ruflo lifts: extended Bash deny list (`git push --force`, `git reset --hard`, `chmod 777`, `find ... -delete`); `/skills` introspection command; doom-loop JSONL extended with `{tool, ses}` so `/reflect` can pull in-session trajectory; verifier-runner delegation prior + memory namespace prior in user CLAUDE.md.
 
@@ -29,6 +31,12 @@ Portable Claude Code setup — ECC-grade operator surface with multi-tier determ
 │   ├── user/{settings.json, CLAUDE.md}    # auto-deployed by install
 │   ├── project/{CLAUDE.md.ml, .research, .tool, .readonly, .mcp.json}
 │   └── rules/{python, markdown, tex}.md
+├── scripts/
+│   └── eval-skills.sh                  # PluginEval wrapper (DSSP UQ.3)
+├── docs/
+│   ├── 03-ruflo-dssp.md                # ruflo DSSP audit (4.5/12)
+│   ├── 04-wshobson-dssp.md             # wshobson/agents DSSP audit (3.5/12)
+│   └── monogram-webui-port-plan.md
 ├── .env.example
 ├── install.sh                          # POSIX (Mac/Linux/Git Bash)
 └── install.ps1                         # Windows native PowerShell
@@ -90,6 +98,20 @@ Copy the matching one to `<project>/CLAUDE.md`:
 ### statusLine
 
 `bash plugins/harim-base/scripts/statusline.sh` — shows `[model] @branch ctx N%` with green/yellow/red thresholds. Auto-configured by installer.
+
+### Layer 2 — UQ.3 skill-quality measurement (external dep)
+
+`scripts/eval-skills.sh` wraps wshobson/agents `plugin-eval` (Wilson CI / bootstrap CI / Clopper-Pearson CI / Elo). Lift target identified in `docs/04-wshobson-dssp.md`. One-time setup:
+
+```bash
+git clone https://github.com/wshobson/agents.git ~/wshobson-agents
+cd ~/wshobson-agents/plugins/plugin-eval && uv sync --extra llm
+# then from claude-setup root:
+scripts/eval-skills.sh standard          # ~$0.30, all 6 skills, "Assessed"
+scripts/eval-skills.sh deep              # ~$3, 50 MC runs each, "Certified"
+```
+
+Output: per-skill markdown reports + summary table at `~/.claude/harim-base/eval-reports/summary-<ts>.md` with composite score, grade (A+~F), badge (Bronze~Platinum), confidence label.
 
 ## Install
 
