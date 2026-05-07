@@ -63,7 +63,7 @@ else
 fi
 
 # 5. register marketplace + enable plugin in user settings (idempotent JSON merge via node)
-echo "[5/5] registering harim-marketplace + enabling harim-base..."
+echo "[5/6] registering harim-marketplace + enabling harim-base..."
 REPO_DIR_FWD="$(echo "$REPO_DIR" | sed 's|\\|/|g')"
 SETTINGS_PATH="$CLAUDE_DIR/settings.json" REPO_DIR="$REPO_DIR_FWD" node - <<'NODE_EOF'
 const fs = require('fs');
@@ -78,6 +78,19 @@ if (!s.enabledPlugins.includes(ref)) s.enabledPlugins.push(ref);
 fs.writeFileSync(p, JSON.stringify(s, null, 2) + '\n');
 console.log("  registered marketplace:", repo);
 console.log("  enabled plugin:", ref);
+NODE_EOF
+
+# 6. configure statusLine pointing to the harim-base script
+echo "[6/6] configuring statusLine..."
+SCRIPT_PATH="$REPO_DIR_FWD/plugins/harim-base/scripts/statusline.sh"
+SETTINGS_PATH="$CLAUDE_DIR/settings.json" STATUSLINE_PATH="$SCRIPT_PATH" node - <<'NODE_EOF'
+const fs = require('fs');
+const p = process.env.SETTINGS_PATH;
+const sp = process.env.STATUSLINE_PATH;
+const s = JSON.parse(fs.readFileSync(p, 'utf8'));
+s.statusLine = { type: "command", command: `bash "${sp}"`, padding: 1 };
+fs.writeFileSync(p, JSON.stringify(s, null, 2) + '\n');
+console.log("  statusLine ->", sp);
 NODE_EOF
 
 cat <<EOF

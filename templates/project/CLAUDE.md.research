@@ -1,0 +1,35 @@
+# Project priors — Research
+
+## Track
+Academic paper / research corpus. Pre-registered designs, reproducible experiments.
+
+## Stack assumptions
+- Python 3.10+ for analysis. LaTeX for papers.
+- Markdown research docs (`research/`, `paper/`).
+- Cheap GPU rentals for experiments (Vast.ai, Lambda Labs).
+
+## Commands
+- `pytest tests/`
+- `tectonic paper/final/main.tex` (preferred over pdflatex)
+- `python -m research.run_audit`
+
+## Discipline
+- **Pre-registration**: state hypothesis + DV before running experiment. Update plan file before code.
+- **Bootstrap CI** on every empirical claim. **Inter-rater κ** for subjective audits.
+- **Cite primary sources verbatim**. Use blockquote + URL footnote, not paraphrase.
+- **Ultrathink validation gate** before claims escalate to paper-text.
+- **Phase boundaries explicit**: Phase N → Phase N+1 only after deliverable lock.
+
+## Forbidden
+- Paraphrasing source material into displacive summaries (use ≤15-word quotes).
+- Modifying `paper/final/sections/` without parallel update to `paper/sections/`.
+- Citing scores from one model as if from another (e.g., GPT-5.4 score as Opus 4.6).
+- Skipping FLAG verification before promoting a claim to a design doc.
+- Committing without reproducible script (every figure has a generator).
+
+## Recommended skill triggers
+- New agent in corpus → `dssp-audit` (deep)
+- Improving a prompt or instruction → `gepa-reflection`
+- Stuck in circular reasoning → `live-swe-reflection`
+- Commit / paper section → `monogram-commit`
+- CI for paper-build → `ecc-prevent-mode`

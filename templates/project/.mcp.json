@@ -1,0 +1,35 @@
+{
+  "_comment": "Project-scope MCP servers. Copy to project root as .mcp.json. Env placeholders use ${VAR} expansion from .env. All servers use npx for cross-platform portability.",
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PAT}"
+      }
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "${PROJECTS_ROOT}"]
+    },
+    "memory": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"]
+    },
+    "fetch": {
+      "command": "npx",
+      "args": ["-y", "@kazuph/mcp-fetch"],
+      "env": {
+        "PYTHONIOENCODING": "utf-8"
+      }
+    },
+    "read-website": {
+      "command": "npx",
+      "args": ["-y", "mcp-read-website-fast"]
+    },
+    "google-surf": {
+      "command": "npx",
+      "args": ["-y", "google-surf-mcp"]
+    }
+  }
+}

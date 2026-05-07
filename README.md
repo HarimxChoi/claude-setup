@@ -1,6 +1,6 @@
 # claude-setup
 
-Portable Claude Code setup. Drop on any device, run install, get a consistent agent environment.
+Portable Claude Code setup. Drop on any device, run install, get a consistent agent environment with hook-enforced anonymity, 6 user-level skills, and DSSP-aligned multi-track priors.
 
 [**한국어 README →**](./README.ko.md)
 
@@ -12,51 +12,103 @@ Portable Claude Code setup. Drop on any device, run install, get a consistent ag
 ├── plugins/
 │   └── harim-base/
 │       ├── .claude-plugin/plugin.json
-│       └── hooks/                      # PreToolUse anonymity hook
-├── templates/user/
-│   ├── settings.json                   # user-level Claude Code settings
-│   └── CLAUDE.md                       # user-level priors
+│       ├── hooks/                      # PreToolUse anonymity hook
+│       ├── scripts/statusline.sh       # status bar (model + branch + ctx %)
+│       └── skills/                     # 6 user-level skills
+│           ├── dssp-audit/
+│           ├── gepa-reflection/
+│           ├── live-swe-reflection/
+│           ├── monogram-commit/
+│           ├── ecc-prevent-mode/
+│           └── forgecode-recover-mode/
+├── templates/
+│   ├── user/{settings.json, CLAUDE.md}    # auto-deployed by install
+│   ├── project/{CLAUDE.md.ml, .research, .tool, .readonly, .mcp.json}
+│   └── rules/{python, markdown, tex}.md
 ├── .env.example
-└── install.sh
+├── install.sh                          # POSIX (Mac/Linux/Git Bash)
+└── install.ps1                         # Windows native PowerShell
 ```
 
-## What it does
+## What it gives you
 
-1. **Anonymity hook** — `harim-base/hooks/strip-claude-attribution.sh` blocks `git commit / branch / push / gh pr create` commands that leak Claude/Anthropic attribution. Forces Monogram-style commit messages (short, noun-centric).
-2. **Permissions baseline** — sensible deny list (`rm -rf`, `curl`, `sudo`, `pip install`, `npm publish`, `.env` reads), narrow allow list (Read/Glob/Grep, `python`, `pytest`, git read-only).
-3. **Working-style priors** — short responses, no fluff, smallest-diff edits, self-verification with Bash, KR-EN bilingual.
+### Layer 0/1 — Settings + priors (auto-deployed)
+- `~/.claude/settings.json` — permissions baseline (deny `rm -rf`, `curl`, `sudo`, `pip install`, `npm publish`, `.env` reads), narrow allow list, `includeCoAuthoredBy: false`, statusLine.
+- `~/.claude/CLAUDE.md` — short response style, smallest-diff edits, KR-EN bilingual, Monogram commit hygiene.
+
+### Layer 4 — Anonymity hook (deterministic enforcement)
+`harim-base/hooks/strip-claude-attribution.sh` BLOCKS:
+- `git commit` with `Co-Authored-By: Claude`, `🤖 Generated`, `claude.ai/code`, `noreply@anthropic.com`
+- `git branch / checkout -b / push origin` with `claude-code/`, `anthropic/`, `claude/`
+- `gh pr create` with the same attribution patterns
+
+Hook uses Node (Claude Code prereq) for JSON parse — falls back to jq if needed; never silently fail-open.
+
+### Layer 2 — 6 user-level skills
+
+| Skill | Type | Triggered when |
+|---|---|---|
+| `dssp-audit` | capability uplift | auditing an agent / scoring 12-branch / RL spine activation |
+| `gepa-reflection` | capability uplift | refining a prompt with ≥3 failed examples + feedback |
+| `live-swe-reflection` | capability uplift | agent stuck in repetitive loop (single-sentence injection) |
+| `monogram-commit` | encoded preference | drafting commit / branch / PR title |
+| `ecc-prevent-mode` | capability uplift | designing CI gates, anti-pattern lists, hook profiles, install manifests |
+| `forgecode-recover-mode` | capability uplift | runtime errors, doom-loop detection, pending-todos gates |
+
+Skills auto-discovered by Claude Code from `plugins/harim-base/skills/<name>/SKILL.md`.
+
+### Layer 1 (project) — 4 CLAUDE.md templates
+
+Copy the matching one to `<project>/CLAUDE.md`:
+- `CLAUDE.md.ml` — production ML (KPI discipline, EC2/local hybrid, no aggregate-only claims)
+- `CLAUDE.md.research` — paper / research corpus (pre-registration, bootstrap CI, verbatim citation)
+- `CLAUDE.md.tool` — npm/pip package (semver, README/ko parallel, SSRF guards)
+- `CLAUDE.md.readonly` — repo owned by external pipeline (e.g., Monogram); Claude stays read-only
+
+### Layer 3 — `.mcp.json` template (project-scope)
+
+`templates/project/.mcp.json` includes 6 MCP servers (github, filesystem, memory, fetch, read-website, google-surf) with `${VAR}` env placeholders. Copy to project root + edit `.env`.
+
+### Path-scoped rules
+
+`templates/rules/{python, markdown, tex}.md` — copy to project's `.claude/rules/` to apply only on matching files.
+
+### statusLine
+
+`bash plugins/harim-base/scripts/statusline.sh` — shows `[model] @branch ctx N%` with green/yellow/red thresholds. Auto-configured by installer.
 
 ## Install
 
-Prereqs: Node 18+, git, jq, [Claude Code CLI](https://docs.claude.com/code).
+Prereqs: Node 18+, git, [Claude Code CLI](https://docs.claude.com/code).
 
 ```bash
 git clone https://github.com/HarimxChoi/claude-setup ~/claude-setup
 cd ~/claude-setup
-bash install.sh
+bash install.sh         # Mac/Linux/Git Bash
+# or
+powershell ./install.ps1   # Windows native
 ```
 
-Then inside Claude Code:
+Restart Claude Code. Marketplace + plugin + statusLine auto-activate via `~/.claude/settings.json` `pluginMarketplaces` + `enabledPlugins` + `statusLine` entries.
+
+## Verify
 
 ```
-/plugin marketplace add ~/claude-setup
-/plugin install harim-base@harim-marketplace
-/plugin list
+/plugin list                    # harim-base@harim-marketplace
+/plugin marketplace list        # harim-marketplace
 ```
 
-## Verify the anonymity hook
-
-Ask Claude to run a commit message containing `Co-Authored-By: Claude` or `🤖 Generated`. The hook returns exit 2 with a rewrite suggestion.
+Try a commit with `Co-Authored-By: Claude` in the body — anonymity hook blocks it.
 
 ## Layered architecture
 
 | Layer | Mechanism | This repo |
 |---|---|---|
-| 0 — settings.json | permissions, model, env | ✓ |
-| 1 — CLAUDE.md | priors | ✓ user-level |
-| 2 — Skills + Subagents | capabilities | next phase |
-| 3 — MCP | external tools | next phase |
-| 4 — Hooks | deterministic enforcement | ✓ anonymity |
+| 0 — settings.json | permissions, model, env, statusLine | ✓ |
+| 1 — CLAUDE.md | priors (user + 4 project templates) | ✓ |
+| 2 — Skills + Subagents | capabilities (6 skills) | ✓ |
+| 3 — MCP | external tools (template) | ✓ |
+| 4 — Hooks | deterministic enforcement (anonymity) | ✓ |
 | 5 — Memory | auto-memory + project memory | (auto) |
 
 ## License

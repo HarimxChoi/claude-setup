@@ -1,7 +1,7 @@
 {
   "name": "harim-base",
-  "version": "0.1.0",
-  "description": "Anonymity hook + workflow priors. Blocks Claude/Anthropic attribution leakage in git commit messages, branch names, and pushes.",
+  "version": "0.3.0",
+  "description": "Anonymity hook + statusline + 6 user-level skills (DSSP audit, GEPA reflection, Live-SWE reflection, Monogram commits, ECC prevent-mode, ForgeCode recover-mode). Pairs hook-enforced commit anonymity with skill-encoded operator discipline.",
   "author": {
     "name": "Harim Choi",
     "email": "2.harim.choi@gmail.com"

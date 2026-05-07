@@ -1,0 +1,25 @@
+# Project priors — Read-only
+
+## Track
+Personal vault written by an external pipeline (e.g., Monogram → markdown). Claude Code stays read-only here.
+
+## Discipline
+- DO NOT edit files in this repo via Claude Code.
+- DO NOT commit. The owning pipeline owns commits.
+- READ-ONLY operations are fine: search, summarize, extract context for other tasks.
+
+## Why
+The owning pipeline auto-commits this repo (Telegram → 5-stage LLM → markdown → git). Manual edits create merge conflicts and break the audit trail.
+
+## Forbidden
+- `Write`, `Edit`, `MultiEdit` on any file in this repo.
+- `git commit`, `git push`, `gh pr create`.
+- Running tests that mutate state.
+
+## Allowed
+- `Read`, `Glob`, `Grep` — read-only inspection.
+- Quoting content into chat (with citation).
+- Summarizing for context in other projects.
+
+## Skill triggers
+None. This repo is observation-only.

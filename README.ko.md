@@ -1,6 +1,6 @@
 # claude-setup
 
-휴대용 Claude Code 세팅. 어떤 디바이스에서든 clone + install로 일관된 에이전트 환경 복원.
+휴대용 Claude Code 세팅. 어떤 디바이스에서든 clone + install로 일관된 에이전트 환경 복원 — hook 강제 익명성, 6개 user-level skill, DSSP 기반 multi-track priors.
 
 [**English README →**](./README.md)
 
@@ -12,51 +12,103 @@
 ├── plugins/
 │   └── harim-base/
 │       ├── .claude-plugin/plugin.json
-│       └── hooks/                      # PreToolUse 익명성 hook
-├── templates/user/
-│   ├── settings.json                   # user-level Claude Code 설정
-│   └── CLAUDE.md                       # user-level priors
+│       ├── hooks/                      # PreToolUse 익명성 hook
+│       ├── scripts/statusline.sh       # status bar (모델 + 브랜치 + ctx %)
+│       └── skills/                     # 6 user-level skills
+│           ├── dssp-audit/
+│           ├── gepa-reflection/
+│           ├── live-swe-reflection/
+│           ├── monogram-commit/
+│           ├── ecc-prevent-mode/
+│           └── forgecode-recover-mode/
+├── templates/
+│   ├── user/{settings.json, CLAUDE.md}    # 자동 배포
+│   ├── project/{CLAUDE.md.ml, .research, .tool, .readonly, .mcp.json}
+│   └── rules/{python, markdown, tex}.md
 ├── .env.example
-└── install.sh
+├── install.sh                          # POSIX (Mac/Linux/Git Bash)
+└── install.ps1                         # Windows native PowerShell
 ```
 
-## 무엇을 하는가
+## 제공 항목
 
-1. **익명성 hook** — `harim-base/hooks/strip-claude-attribution.sh`가 `git commit / branch / push / gh pr create` 명령에서 Claude/Anthropic 흔적이 leak되는 것을 차단. Monogram 스타일 (짧고 명사 중심) commit 메시지를 강제.
-2. **Permissions baseline** — 합리적인 deny list (`rm -rf`, `curl`, `sudo`, `pip install`, `npm publish`, `.env` 읽기), 좁은 allow list (Read/Glob/Grep, `python`, `pytest`, git read-only).
-3. **Working-style priors** — 짧은 응답, 군더더기 없음, 최소 diff, Bash로 self-verification, KR-EN bilingual.
+### Layer 0/1 — Settings + priors (자동 배포)
+- `~/.claude/settings.json` — permissions baseline (`rm -rf`, `curl`, `sudo`, `pip install`, `npm publish`, `.env` 읽기 deny), 좁은 allow list, `includeCoAuthoredBy: false`, statusLine.
+- `~/.claude/CLAUDE.md` — 짧은 응답, 최소 diff, KR-EN bilingual, Monogram commit hygiene.
+
+### Layer 4 — 익명성 hook (결정론적 강제)
+`harim-base/hooks/strip-claude-attribution.sh`가 차단:
+- `git commit` 메시지에 `Co-Authored-By: Claude`, `🤖 Generated`, `claude.ai/code`, `noreply@anthropic.com`
+- `git branch / checkout -b / push origin`에 `claude-code/`, `anthropic/`, `claude/`
+- `gh pr create`의 동일 패턴
+
+Node (Claude Code 전제조건) 사용해 JSON parse — jq fallback. silent fail-open 없음.
+
+### Layer 2 — 6 user-level skills
+
+| Skill | 종류 | 활성화 시점 |
+|---|---|---|
+| `dssp-audit` | capability uplift | agent 감사 / 12-branch 점수 / RL spine 활성화 측정 |
+| `gepa-reflection` | capability uplift | 실패 예제 ≥3개 + feedback으로 prompt 개선 |
+| `live-swe-reflection` | capability uplift | agent 반복 루프 빠짐 (single-sentence injection) |
+| `monogram-commit` | encoded preference | commit / branch / PR 제목 작성 |
+| `ecc-prevent-mode` | capability uplift | CI gate, anti-pattern list, hook profile, install manifest 설계 |
+| `forgecode-recover-mode` | capability uplift | runtime error, doom-loop 감지, pending-todos gate |
+
+Skills는 Claude Code가 `plugins/harim-base/skills/<name>/SKILL.md`에서 자동 발견.
+
+### Layer 1 (프로젝트) — 4개 CLAUDE.md 템플릿
+
+매칭되는 것을 `<project>/CLAUDE.md`로 복사:
+- `CLAUDE.md.ml` — production ML (KPI discipline, EC2/local 하이브리드)
+- `CLAUDE.md.research` — paper / research corpus (pre-registration, bootstrap CI)
+- `CLAUDE.md.tool` — npm/pip 패키지 (semver, README/ko parallel)
+- `CLAUDE.md.readonly` — 외부 pipeline 소유 repo (e.g., Monogram); Claude는 read-only
+
+### Layer 3 — `.mcp.json` 템플릿 (project-scope)
+
+`templates/project/.mcp.json`에 6개 MCP server (github, filesystem, memory, fetch, read-website, google-surf) + `${VAR}` env placeholder. project root에 복사 후 `.env` 채우기.
+
+### Path-scoped rules
+
+`templates/rules/{python, markdown, tex}.md` — project의 `.claude/rules/`에 복사하면 매칭 파일에서만 활성.
+
+### statusLine
+
+`bash plugins/harim-base/scripts/statusline.sh` — `[model] @branch ctx N%` 표시 (green/yellow/red threshold). 설치 스크립트가 자동 설정.
 
 ## 설치
 
-사전 요구: Node 18+, git, jq, [Claude Code CLI](https://docs.claude.com/code).
+사전 요구: Node 18+, git, [Claude Code CLI](https://docs.claude.com/code).
 
 ```bash
 git clone https://github.com/HarimxChoi/claude-setup ~/claude-setup
 cd ~/claude-setup
-bash install.sh
+bash install.sh         # Mac/Linux/Git Bash
+# 또는
+powershell ./install.ps1   # Windows native
 ```
 
-Claude Code 안에서:
+Claude Code 재시작. Marketplace + plugin + statusLine이 `~/.claude/settings.json`의 `pluginMarketplaces` + `enabledPlugins` + `statusLine` 항목으로 자동 활성화.
+
+## 검증
 
 ```
-/plugin marketplace add ~/claude-setup
-/plugin install harim-base@harim-marketplace
-/plugin list
+/plugin list                    # harim-base@harim-marketplace
+/plugin marketplace list        # harim-marketplace
 ```
 
-## 익명성 hook 검증
-
-Claude에게 `Co-Authored-By: Claude` 또는 `🤖 Generated`가 포함된 commit 메시지로 commit하도록 요청하세요. Hook이 exit 2 + 재작성 가이드와 함께 차단합니다.
+`Co-Authored-By: Claude` 포함 commit 시도 — 익명성 hook이 차단.
 
 ## Layer 구조
 
 | Layer | 메커니즘 | 본 repo |
 |---|---|---|
-| 0 — settings.json | 권한, 모델, env | ✓ |
-| 1 — CLAUDE.md | priors | ✓ user-level |
-| 2 — Skills + Subagents | capabilities | 다음 phase |
-| 3 — MCP | 외부 도구 | 다음 phase |
-| 4 — Hooks | 결정론적 강제 | ✓ 익명성 |
+| 0 — settings.json | 권한, 모델, env, statusLine | ✓ |
+| 1 — CLAUDE.md | priors (user + 4 project templates) | ✓ |
+| 2 — Skills + Subagents | capabilities (6 skills) | ✓ |
+| 3 — MCP | 외부 도구 (템플릿) | ✓ |
+| 4 — Hooks | 결정론적 강제 (익명성) | ✓ |
 | 5 — Memory | auto-memory + project memory | (자동) |
 
 ## License
