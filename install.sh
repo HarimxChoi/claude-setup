@@ -19,7 +19,8 @@ echo
 echo "[1/4] checking prerequisites..."
 command -v node >/dev/null 2>&1 || { echo "  ERROR: node not found. Install Node 18+." >&2; exit 1; }
 command -v git  >/dev/null 2>&1 || { echo "  ERROR: git not found." >&2; exit 1; }
-command -v jq   >/dev/null 2>&1 || { echo "  WARN: jq not found. Anonymity hook will fail-open. Install: https://stedolan.github.io/jq/" >&2; }
+# jq is optional — anonymity hook uses node first, jq second.
+command -v jq   >/dev/null 2>&1 || echo "  note: jq not found (optional; hook uses node)."
 NODE_MAJOR=$(node -p "parseInt(process.versions.node.split('.')[0])")
 if [[ "$NODE_MAJOR" -lt 18 ]]; then
   echo "  ERROR: Node $NODE_MAJOR detected; need >= 18." >&2
@@ -52,7 +53,7 @@ chmod +x "$REPO_DIR/plugins/harim-base/hooks/"*.sh 2>/dev/null || true
 echo "  ok"
 
 # 4. .env
-echo "[4/4] seeding .env..."
+echo "[4/5] seeding .env..."
 if [[ ! -f "$REPO_DIR/.env" ]]; then
   cp "$REPO_DIR/.env.example" "$REPO_DIR/.env"
   echo "  created .env from .env.example"
@@ -61,15 +62,32 @@ else
   echo "  .env exists, leaving alone"
 fi
 
+# 5. register marketplace + enable plugin in user settings (idempotent JSON merge via node)
+echo "[5/5] registering harim-marketplace + enabling harim-base..."
+REPO_DIR_FWD="$(echo "$REPO_DIR" | sed 's|\\|/|g')"
+SETTINGS_PATH="$CLAUDE_DIR/settings.json" REPO_DIR="$REPO_DIR_FWD" node - <<'NODE_EOF'
+const fs = require('fs');
+const p = process.env.SETTINGS_PATH;
+const repo = process.env.REPO_DIR;
+const s = JSON.parse(fs.readFileSync(p, 'utf8'));
+s.pluginMarketplaces = s.pluginMarketplaces || [];
+if (!s.pluginMarketplaces.includes(repo)) s.pluginMarketplaces.push(repo);
+s.enabledPlugins = s.enabledPlugins || [];
+const ref = "harim-base@harim-marketplace";
+if (!s.enabledPlugins.includes(ref)) s.enabledPlugins.push(ref);
+fs.writeFileSync(p, JSON.stringify(s, null, 2) + '\n');
+console.log("  registered marketplace:", repo);
+console.log("  enabled plugin:", ref);
+NODE_EOF
+
 cat <<EOF
 
-==> done. next steps inside Claude Code:
+==> done. next steps:
 
-  cd $REPO_DIR && claude
+  start (or restart) a Claude Code session — marketplace + plugin auto-register.
 
-  /plugin marketplace add $REPO_DIR
-  /plugin install harim-base@harim-marketplace
-  /plugin list           # verify harim-base appears
+  inside Claude Code, verify:
+    /plugin list           # should show harim-base@harim-marketplace
 
 verify the anonymity hook:
   ask Claude to run: git commit -m "test 🤖 Generated"
