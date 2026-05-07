@@ -463,9 +463,22 @@ description). Fix: wrap entire description in single quotes; replace inline
 `: ` with em-dash or backtick. Lift: 2/6 skills had a silent YAML bug that
 PluginEval surfaced — DSSP UQ.3★★ paid off immediately.
 
-Deep-depth (50 MC runs each, Wilson/bootstrap/Clopper-Pearson CI per skill) is
-the v0.6.1 baseline; results recorded under
-`~/.claude/harim-base/eval-reports/`.
+**Deep-depth attempt aborted** — single-skill deep eval (50 MC runs, Sonnet)
+took **28 + minutes** and timed out after the second skill spawned. The
+plugin-eval doc's "2–5 minutes per skill" estimate is for short skill bodies
+and short MC outputs. Reality on these skills (~400-line orchestrator-style
+SKILL.md): each MC run produces verbose output, concurrency=4 doesn't help
+because individual calls take ~30-60s each. Estimated full-corpus deep run:
+**3–4 hours**. This is **out of solo-use budget** — the UQ.3 lift is
+real but the wallclock cost is not amortizable for a 6-skill catalog. Standard
+depth (no MC) is the **practical v0.6.1 baseline**. Re-evaluate at v0.7 if
+either (a) the catalog grows to 12+ skills (justifying overnight CI runs),
+or (b) plugin-eval gains a `--n-runs` flag to reduce MC budget.
+
+The standard-depth result is sufficient: it caught the YAML bug
+(2/6 skills broken silently), gave usable composite scores + judge dimensions,
+and surfaced the orchestration-fitness systematic bias on legitimate
+orchestrator skills. **UQ.3 lift returns positive ROI even at standard depth.**
 
 ### 11.7 NOT lifted
 
