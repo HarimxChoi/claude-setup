@@ -91,7 +91,7 @@ Copy the matching one to `<project>/CLAUDE.md`:
 
 ## Install
 
-Prereqs: Node 18+, git, [Claude Code CLI](https://docs.claude.com/code).
+Prereqs: Node 18+, git, Claude Code (CLI or Desktop app).
 
 ```bash
 git clone https://github.com/HarimxChoi/claude-setup ~/claude-setup
@@ -101,7 +101,11 @@ bash install.sh         # Mac/Linux/Git Bash
 powershell ./install.ps1   # Windows native
 ```
 
-Restart Claude Code. Marketplace + plugin + statusLine auto-activate via `~/.claude/settings.json` `pluginMarketplaces` + `enabledPlugins` + `statusLine` entries.
+**install.sh deploys 2 ways** (both run automatically):
+1. **Plugin path** (Claude Code CLI): adds repo to `pluginMarketplaces`; activate via `/plugin install harim-base@harim-marketplace`
+2. **User-level path** (Claude Desktop / fallback): copies skills/agents/commands/rules to `~/.claude/<type>/` and injects hooks block (with absolute paths) into `~/.claude/settings.json`
+
+Restart Claude Code or Claude Desktop after install. Hooks fire on Bash calls; skills/agents/commands appear in their respective lists.
 
 ## Verify
 

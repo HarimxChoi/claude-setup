@@ -94,7 +94,7 @@ console.log("  statusLine ->", sp);
 NODE_EOF
 
 # 7. ensure skillOverrides present (template ships them, but re-merge in case user has older settings)
-echo "[7/7] ensuring skillOverrides..."
+echo "[7/9] ensuring skillOverrides..."
 SETTINGS_PATH="$CLAUDE_DIR/settings.json" node - <<'NODE_EOF'
 const fs = require('fs');
 const p = process.env.SETTINGS_PATH;
@@ -109,6 +109,37 @@ s.skillOverrides = Object.assign({}, defaults, s.skillOverrides || {});
 fs.writeFileSync(p, JSON.stringify(s, null, 2) + '\n');
 console.log("  skillOverrides:", Object.keys(s.skillOverrides).length, "entries");
 NODE_EOF
+
+# 8. inject hooks block into ~/.claude/settings.json with absolute paths
+# (Claude Desktop local-agent-mode reads hooks from rpm-installed plugins or user settings;
+#  user settings path is the more reliable activation route across environments)
+echo "[8/9] injecting hooks block into user settings..."
+SETTINGS_PATH="$CLAUDE_DIR/settings.json" REPO_DIR="$REPO_DIR_FWD" node - <<'NODE_EOF'
+const fs = require('fs');
+const p = process.env.SETTINGS_PATH;
+const repo = process.env.REPO_DIR;
+const s = JSON.parse(fs.readFileSync(p, 'utf8'));
+const mkHook = (script) => ({
+  type: "command",
+  command: `bash "${repo}/plugins/harim-base/hooks/${script}"`,
+  timeout: 5
+});
+s.hooks = s.hooks || {};
+s.hooks.PreToolUse = [{ matcher: "Bash", hooks: [mkHook("strip-claude-attribution.sh")] }];
+s.hooks.PostToolUse = [{ matcher: "", hooks: [mkHook("doom-loop-detect.sh")] }];
+s.hooks.Stop = [{ matcher: "", hooks: [mkHook("pending-todos-gate.sh")] }];
+fs.writeFileSync(p, JSON.stringify(s, null, 2) + '\n');
+console.log("  hooks: PreToolUse + PostToolUse + Stop registered");
+NODE_EOF
+
+# 9. deploy skills/agents/commands/rules to user-level (Claude Desktop reads from ~/.claude/<type>/)
+echo "[9/9] deploying skills/agents/commands/rules to user-level..."
+mkdir -p "$CLAUDE_DIR/skills" "$CLAUDE_DIR/agents" "$CLAUDE_DIR/commands" "$CLAUDE_DIR/rules"
+cp -r "$REPO_DIR/plugins/harim-base/skills/"* "$CLAUDE_DIR/skills/" 2>/dev/null || true
+cp "$REPO_DIR/plugins/harim-base/agents/"*.md "$CLAUDE_DIR/agents/" 2>/dev/null || true
+cp "$REPO_DIR/plugins/harim-base/commands/"*.md "$CLAUDE_DIR/commands/" 2>/dev/null || true
+cp "$REPO_DIR/plugins/harim-base/rules/"*.md "$CLAUDE_DIR/rules/" 2>/dev/null || true
+echo "  skills: $(ls "$CLAUDE_DIR/skills/" 2>/dev/null | wc -l) | agents: $(ls "$CLAUDE_DIR/agents/" 2>/dev/null | wc -l) | commands: $(ls "$CLAUDE_DIR/commands/" 2>/dev/null | wc -l) | rules: $(ls "$CLAUDE_DIR/rules/" 2>/dev/null | wc -l)"
 
 cat <<EOF
 
