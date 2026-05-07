@@ -1,0 +1,11 @@
+{
+  "name": "harim-base",
+  "version": "0.1.0",
+  "description": "Anonymity hook + workflow priors. Blocks Claude/Anthropic attribution leakage in git commit messages, branch names, and pushes.",
+  "author": {
+    "name": "Harim Choi",
+    "email": "2.harim.choi@gmail.com"
+  },
+  "license": "MIT",
+  "hooks": "hooks/hooks.json"
+}

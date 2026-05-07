@@ -1,0 +1,21 @@
+{
+  "name": "harim-marketplace",
+  "owner": {
+    "name": "Harim Choi",
+    "email": "2.harim.choi@gmail.com"
+  },
+  "metadata": {
+    "description": "Personal Claude Code setup: anonymity hook, multi-track priors, DSSP-aligned skills",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "harim-base",
+      "source": "./plugins/harim-base",
+      "description": "Base plugin: PreToolUse anonymity hook + workflow priors. Strips Claude/Anthropic attribution from commits, branches, and pushes.",
+      "version": "0.1.0",
+      "category": "personal-setup",
+      "license": "MIT"
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "_comment": "User-level baseline. Project-level settings can override. Keep this minimal — track-specific rules belong in project CLAUDE.md / .claude/settings.json.",
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(rm -fr *)",
+      "Bash(sudo *)",
+      "Bash(curl *)",
+      "Bash(wget *)",
+      "Bash(npm publish *)",
+      "Bash(pip install *)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./secrets/**)"
+    ],
+    "allow": [
+      "Read",
+      "Glob",
+      "Grep",
+      "Bash(python *)",
+      "Bash(py *)",
+      "Bash(pytest *)",
+      "Bash(ls *)",
+      "Bash(cat *)",
+      "Bash(echo *)",
+      "Bash(pwd)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git branch *)",
+      "Bash(git show *)",
+      "Bash(npm test)",
+      "Bash(npm run *)"
+    ]
+  },
+  "alwaysThinkingEnabled": true,
+  "respectGitignore": true,
+  "spinnerTipsEnabled": false,
+  "includeCoAuthoredBy": false,
+  "cleanupPeriodDays": 0,
+  "includeGitInstructions": true
+}

@@ -1,0 +1,35 @@
+# Environment
+.env
+.env.local
+*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*~
+
+# Node
+node_modules/
+npm-debug.log
+package-lock.json.bak
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Claude Code state (user-specific overrides)
+.claude/settings.local.json
+
+# Backups
+*.bak
+*.bak.*
+
+# Logs
+*.log
