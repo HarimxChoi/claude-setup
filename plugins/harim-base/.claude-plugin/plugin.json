@@ -1,6 +1,6 @@
 {
   "name": "harim-base",
-  "version": "0.6.0",
+  "version": "0.6.2",
   "description": "ECC-grade operator surface: 3 deterministic hooks (anonymity + monogram lifecycle, doom-loop trace JSONL, pending-todos gate), 1 verifier-runner subagent, 6 skills with skillOverrides routing, 4 slash commands (audit/reflect/commit/skills), 3 path-scoped rules, statusline, PluginEval integration via scripts/eval-skills.sh. DSSP ~3.5/12 (UQ.3 lift over v0.5 via wshobson/plugin-eval external dep).",
   "author": {
     "name": "Harim Choi",

@@ -87,8 +87,22 @@ SETTINGS_PATH="$CLAUDE_DIR/settings.json" STATUSLINE_PATH="$SCRIPT_PATH" node - 
 const fs = require('fs');
 const p = process.env.SETTINGS_PATH;
 const sp = process.env.STATUSLINE_PATH;
+// Same Windows Desktop App workaround as hooks block (issue #22700)
+const candidates = [
+  "C:/Program Files/Git/bin/bash.exe",
+  "C:/Program Files/Git/usr/bin/bash.exe",
+  "C:/Program Files (x86)/Git/bin/bash.exe",
+  "/opt/homebrew/bin/bash",
+  "/usr/local/bin/bash",
+  "/usr/bin/bash",
+  "/bin/bash",
+];
+let bashPath = "bash";
+for (const c of candidates) {
+  try { fs.accessSync(c, fs.constants.X_OK); bashPath = c; break; } catch {}
+}
 const s = JSON.parse(fs.readFileSync(p, 'utf8'));
-s.statusLine = { type: "command", command: `bash "${sp}"`, padding: 1 };
+s.statusLine = { type: "command", command: `"${bashPath}" "${sp}"`, padding: 1 };
 fs.writeFileSync(p, JSON.stringify(s, null, 2) + '\n');
 console.log("  statusLine ->", sp);
 NODE_EOF
@@ -114,14 +128,34 @@ NODE_EOF
 # (Claude Desktop local-agent-mode reads hooks from rpm-installed plugins or user settings;
 #  user settings path is the more reliable activation route across environments)
 echo "[8/9] injecting hooks block into user settings..."
+# Windows Desktop App workaround (claude-code issue #22700):
+# Desktop's hook runner uses system PATH (Machine), which Git for Windows
+# default install does NOT populate with bash.exe. Use FULL bash path.
 SETTINGS_PATH="$CLAUDE_DIR/settings.json" REPO_DIR="$REPO_DIR_FWD" node - <<'NODE_EOF'
 const fs = require('fs');
 const p = process.env.SETTINGS_PATH;
 const repo = process.env.REPO_DIR;
 const s = JSON.parse(fs.readFileSync(p, 'utf8'));
+
+// Detect bash full path (Windows Desktop App needs absolute path; macOS/Linux fine with `bash`)
+const candidates = [
+  "C:/Program Files/Git/bin/bash.exe",
+  "C:/Program Files/Git/usr/bin/bash.exe",
+  "C:/Program Files (x86)/Git/bin/bash.exe",
+  "/opt/homebrew/bin/bash",
+  "/usr/local/bin/bash",
+  "/usr/bin/bash",
+  "/bin/bash",
+];
+let bashPath = "bash";  // fallback
+for (const c of candidates) {
+  try { fs.accessSync(c, fs.constants.X_OK); bashPath = c; break; } catch {}
+}
+console.log("  bash:", bashPath);
+
 const mkHook = (script) => ({
   type: "command",
-  command: `bash "${repo}/plugins/harim-base/hooks/${script}"`,
+  command: `"${bashPath}" "${repo}/plugins/harim-base/hooks/${script}"`,
   timeout: 5
 });
 s.hooks = s.hooks || {};

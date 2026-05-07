@@ -2,6 +2,8 @@
 
 Portable Claude Code setup — ECC-grade operator surface with multi-tier deterministic routing + PluginEval-driven UQ.3 measurement. DSSP ~3.5/12 (ForgeCode operator-surface tier + DT.7 / DRO.8 / UQ.3 increments after ruflo and wshobson/agents audits).
 
+**v0.6.2** — Windows Desktop App hook fix (claude-code issue [#22700](https://github.com/anthropics/claude-code/issues/22700)): `bash` command in `settings.json` hooks fails on Windows Desktop because it uses system PATH (Git for Windows default = `Git\cmd` only, no `Git\bin`). `install.sh` + `install.ps1` now detect `bash.exe` full path (`C:/Program Files/Git/bin/bash.exe` or fallback) and inject absolute path in hooks block + statusLine. Re-run installer after upgrade.
+
 **v0.6.0** — UQ.3 lift: external dep on wshobson/agents `plugin-eval` for skill-quality scoring (Wilson CI / bootstrap CI / Clopper-Pearson CI). New `scripts/eval-skills.sh` wrapper runs `uv run plugin-eval score` against the 6 user-level skills with markdown summary output.
 
 **v0.5.0** — triaged ruflo lifts: extended Bash deny list (`git push --force`, `git reset --hard`, `chmod 777`, `find ... -delete`); `/skills` introspection command; doom-loop JSONL extended with `{tool, ses}` so `/reflect` can pull in-session trajectory; verifier-runner delegation prior + memory namespace prior in user CLAUDE.md.

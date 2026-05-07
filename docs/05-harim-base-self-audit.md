@@ -129,7 +129,7 @@
 
 1. **Standard depth ≠ UQ.3★★**: deep-only Wilson CI / bootstrap CI / Clopper-Pearson 미실행. UQ.3★ 한정.
 2. **MC quality score = `min(1, len/500)` 결함** (`04-wshobson-dssp.md` §10.1) — verbose-but-wrong 스킬에 점수 인플레이션 위험. 6-skill catalog에선 무관 (모두 짧음).
-3. **Hook-fire 검증 미완료**: v0.5 deploy 후 hooks/skills/agents가 실제로 발화하는지 cross-session test 없음.
+3. **Hook-fire 검증 (post-mortem on v0.6.1 → fixed in v0.6.2)**: 재부팅 후 검증 시 PostToolUse JSONL 누적 0 발견. 진단: claude-code issue **#22700** — Windows Desktop App이 `bash` 명령을 system PATH로 resolve하는데 Git for Windows 기본 설치는 `Git\cmd`만 등록 (`Git\bin` 미등록), `bash.exe` 미발견. **Hook 매칭은 되나 실행 silent fail**. Fix: settings.json hook command를 절대경로 (`C:/Program Files/Git/bin/bash.exe`)로 변경. install.sh + install.ps1 모두 detect-bash-path 로직 추가. v0.6.2에서 해소.
 4. **Memory namespace prior가 enforce 아닌 prior**: `<project>:<entity>` 권고일 뿐 자동 감시 없음.
 5. **verifier-runner subagent dead-weight 위험**: CLAUDE.md prior로만 위임 안내; 실제 사용 빈도 측정 없음.
 
