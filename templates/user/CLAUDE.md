@@ -33,6 +33,8 @@ examples in the prompt. A single `python -c "..."` invocation is often enough.
 - Prefer Read/Edit/Write over Bash for file ops.
 - Parallel tool calls when independent.
 - Avoid network commands (curl, wget) unless explicitly asked.
+- Delegate to `verifier-runner` subagent (Agent tool) when running tests / lint / typecheck / build whose output likely exceeds ~50 lines — keeps noisy output out of main context.
+- When using memory MCP, prefix entity names with `<project>:<entity>` (e.g. `monogram:webhook-flow`) to prevent cross-project contamination.
 
 ## Domain context
 - Primary work: Korean public procurement ML + agentic systems research.

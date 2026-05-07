@@ -1,8 +1,10 @@
 # claude-setup
 
-Portable Claude Code setup — ECC-grade operator surface with multi-tier deterministic routing. DSSP score ~2.5/12 (matches ForgeCode operator-surface tier).
+Portable Claude Code setup — ECC-grade operator surface with multi-tier deterministic routing. DSSP ~3/12 (ForgeCode operator-surface tier + DT.7 / DRO.8 increments after ruflo audit).
 
-**v0.4.0** — adds doom-loop detection, pending-todos completion gate, verifier-runner subagent, skillOverrides routing, slash commands, and lifecycle skill activation.
+**v0.5.0** — triaged ruflo lifts: extended Bash deny list (`git push --force`, `git reset --hard`, `chmod 777`, `find ... -delete`); `/skills` introspection command; doom-loop JSONL extended with `{tool, ses}` so `/reflect` can pull in-session trajectory; verifier-runner delegation prior + memory namespace prior in user CLAUDE.md.
+
+**v0.4.0** — doom-loop detection, pending-todos completion gate, verifier-runner subagent, skillOverrides routing, slash commands, lifecycle skill activation.
 
 [**한국어 README →**](./README.ko.md)
 
@@ -65,9 +67,9 @@ Portable Claude Code setup — ECC-grade operator surface with multi-tier determ
 
 `plugins/harim-base/agents/verifier-runner.md` — Haiku-based subagent for high-noise output isolation. Runs tests/lint/type-checks, returns ≤500-char pass/fail summary. Read-only.
 
-### Layer 2 — 3 slash commands
+### Layer 2 — 4 slash commands
 
-`plugins/harim-base/commands/{audit, reflect, commit}.md` — explicit invocation paths for the T3 skills.
+`plugins/harim-base/commands/{audit, reflect, commit, skills}.md` — explicit invocation paths for T3 skills + `/skills` introspection (lists active skills with activation tier, flags dead weight / drift / missing-command).
 
 ### Layer 1 (project) — 4 CLAUDE.md templates
 

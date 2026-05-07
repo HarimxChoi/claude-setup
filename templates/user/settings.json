@@ -11,6 +11,13 @@
       "Bash(wget *)",
       "Bash(npm publish *)",
       "Bash(pip install *)",
+      "Bash(git push --force *)",
+      "Bash(git push -f *)",
+      "Bash(git reset --hard *)",
+      "Bash(git clean -fd *)",
+      "Bash(git clean -fdx *)",
+      "Bash(chmod 777 *)",
+      "Bash(find * -delete)",
       "Read(./.env)",
       "Read(./.env.*)",
       "Read(./secrets/**)"

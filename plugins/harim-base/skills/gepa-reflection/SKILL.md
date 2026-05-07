@@ -58,6 +58,14 @@ Output the new instruction inside ```...``` so it can be parsed.
 - The triple-backtick output funnel matters. Don't try to parse free-form prose.
 - For multi-instruction systems, GEPA can optimize each instruction separately or jointly. Single-instruction default is simpler.
 
+## Data sources for in-session reflection
+
+When invoked via `/reflect` with no explicit failure set, derive the trace from the doom-loop log:
+
+- `${CLAUDE_PROJECT_DIR}/.harim/action-log.jsonl` (project scope) or `~/.claude/harim-base/.harim/action-log.jsonl` (global fallback)
+- Each line: `{ts, tool, sig, ses}`. Filter by current `ses` (session_id) for in-session trace; group by `tool` to spot loop-prone tools; diff `sig` against task to identify drift.
+- Use this trajectory as `<side_info>` when the user asks "why did this session take so long" or "what's wrong with my recent approach".
+
 ## Anti-patterns
 
 - Sending only score (no feedback) → degenerates to random search.

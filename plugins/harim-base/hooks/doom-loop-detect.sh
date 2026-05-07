@@ -17,22 +17,24 @@ LOG_DIR="${CLAUDE_PROJECT_DIR:-$HOME/.claude/harim-base}/.harim"
 mkdir -p "$LOG_DIR" 2>/dev/null || exit 0
 LOG_FILE="$LOG_DIR/action-log.jsonl"
 
-# Extract signature from JSON: "tool_name|first-arg-hash"
-SIG=$(printf '%s' "$INPUT" | node -e '
+# Extract record from JSON: tool, sig (tool|argSlice), session id
+REC=$(printf '%s' "$INPUT" | node -e '
   try {
     const d = JSON.parse(require("fs").readFileSync(0, "utf8"));
     const name = d.tool_name || "?";
     const input = JSON.stringify(d.tool_input || {});
-    // simple hash: first 32 chars of args
     const argSlice = input.slice(0, 32);
-    process.stdout.write(`${name}|${argSlice}`);
+    const sig = `${name}|${argSlice}`;
+    const ses = d.session_id || process.env.CLAUDE_SESSION_ID || "";
+    const rec = { ts: Math.floor(Date.now()/1000), tool: name, sig, ses };
+    process.stdout.write(JSON.stringify(rec));
   } catch (e) { process.stdout.write(""); }
 ')
 
-[[ -z "$SIG" ]] && exit 0
+[[ -z "$REC" ]] && exit 0
 
-# Append signature with timestamp
-echo "{\"ts\":$(date +%s),\"sig\":$(printf '%s' "$SIG" | node -e 'process.stdout.write(JSON.stringify(require("fs").readFileSync(0,"utf8")))')}" >> "$LOG_FILE"
+echo "$REC" >> "$LOG_FILE"
+SIG=$(printf '%s' "$REC" | node -e 'try{process.stdout.write(JSON.parse(require("fs").readFileSync(0,"utf8")).sig||"")}catch{}')
 
 # Keep only last 100 lines (rolling window)
 if [[ $(wc -l < "$LOG_FILE" 2>/dev/null || echo 0) -gt 100 ]]; then
