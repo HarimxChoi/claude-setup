@@ -64,7 +64,7 @@ $env:SETTINGS_PATH = $settingsPath
 $env:REPO_DIR_FWD = $RepoDir
 node -e "const fs=require('fs');const p=process.env.SETTINGS_PATH;const repo=process.env.REPO_DIR_FWD;const s=JSON.parse(fs.readFileSync(p,'utf8'));const ref='harim-base@harim-marketplace';if(Array.isArray(s.enabledPlugins)){const o={};for(const e of s.enabledPlugins)o[e]=true;s.enabledPlugins=o;}s.enabledPlugins=s.enabledPlugins||{};s.enabledPlugins[ref]=true;s.extraKnownMarketplaces=s.extraKnownMarketplaces||{};s.extraKnownMarketplaces['harim-marketplace']={source:{source:'directory',path:repo}};delete s.pluginMarketplaces;fs.writeFileSync(p,JSON.stringify(s,null,2)+'\n');console.log('  registered:',repo);console.log('  enabled:',ref);"
 
-# 6. configure statusLine (use FULL bash path — Desktop App uses system PATH)
+# 6. configure statusLine (Windows pwsh wrapper per official hooks-guide docs)
 # NOTE: JS goes through a temp file rather than `node -e @"..."@`. PowerShell mangles
 # embedded double-quotes when it passes a here-string as a single command-line arg
 # to a native exe, dropping content like '"' (single-double-single) — leaves the JS
@@ -81,8 +81,9 @@ const sp = process.env.STATUSLINE_PATH;
 const candidates = ['C:/Program Files/Git/bin/bash.exe','C:/Program Files/Git/usr/bin/bash.exe','C:/Program Files (x86)/Git/bin/bash.exe'];
 let bashPath = 'bash';
 for (const c of candidates) { try { fs.accessSync(c, fs.constants.X_OK); bashPath = c; break; } catch {} }
+const winBash = bashPath.replace(/\//g, '\\\\');
 const s = JSON.parse(fs.readFileSync(p, 'utf8'));
-s.statusLine = { type: 'command', command: '"' + bashPath + '" "' + sp + '"', padding: 1 };
+s.statusLine = { type: 'command', command: '& "' + winBash + '" "' + sp + '"; exit \$LASTEXITCODE', padding: 1 };
 fs.writeFileSync(p, JSON.stringify(s, null, 2) + '\n');
 console.log('  bash:', bashPath);
 console.log('  statusLine ->', sp);
@@ -109,14 +110,15 @@ const repo = process.env.REPO_DIR_FWD;
 const candidates = ['C:/Program Files/Git/bin/bash.exe','C:/Program Files/Git/usr/bin/bash.exe','C:/Program Files (x86)/Git/bin/bash.exe'];
 let bashPath = 'bash';
 for (const c of candidates) { try { fs.accessSync(c, fs.constants.X_OK); bashPath = c; break; } catch {} }
+const winBash = bashPath.replace(/\//g, '\\\\');
 const s = JSON.parse(fs.readFileSync(p, 'utf8'));
-const mkHook = (script) => ({ type: 'command', command: '"' + bashPath + '" "' + repo + '/plugins/harim-base/hooks/' + script + '"', timeout: 5 });
+const mkHook = (script) => ({ type: 'command', command: '& "' + winBash + '" "' + repo + '/plugins/harim-base/hooks/' + script + '"; exit \$LASTEXITCODE', shell: 'powershell', timeout: 5 });
 s.hooks = s.hooks || {};
 s.hooks.PreToolUse = [{ matcher: 'Bash', hooks: [mkHook('strip-claude-attribution.sh')] }];
 s.hooks.PostToolUse = [{ matcher: '', hooks: [mkHook('doom-loop-detect.sh')] }];
 s.hooks.Stop = [{ matcher: '', hooks: [mkHook('pending-todos-gate.sh')] }];
 fs.writeFileSync(p, JSON.stringify(s, null, 2) + '\n');
-console.log('  bash:', bashPath);
+console.log('  bash:', bashPath, '(pwsh-wrap)');
 console.log('  hooks: PreToolUse + PostToolUse + Stop registered');
 '@
 node $tmpJs

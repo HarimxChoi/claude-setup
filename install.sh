@@ -98,26 +98,32 @@ echo "[6/7] configuring statusLine..."
 SCRIPT_PATH="$REPO_DIR_FWD/plugins/harim-base/scripts/statusline.sh"
 SETTINGS_PATH="$CLAUDE_DIR/settings.json" STATUSLINE_PATH="$SCRIPT_PATH" node - <<'NODE_EOF'
 const fs = require('fs');
+const path = require('path');
 const p = process.env.SETTINGS_PATH;
 const sp = process.env.STATUSLINE_PATH;
-// Same Windows Desktop App workaround as hooks block (issue #22700)
-const candidates = [
-  "C:/Program Files/Git/bin/bash.exe",
-  "C:/Program Files/Git/usr/bin/bash.exe",
-  "C:/Program Files (x86)/Git/bin/bash.exe",
-  "/opt/homebrew/bin/bash",
-  "/usr/local/bin/bash",
-  "/usr/bin/bash",
-  "/bin/bash",
-];
+// Detect bash + platform. On Windows Desktop App, use pwsh-wrapped invocation
+// (per official docs https://code.claude.com/docs/ko/hooks-guide windows pattern).
+const isWin = process.platform === "win32";
+const bashCandidates = isWin
+  ? ["C:/Program Files/Git/bin/bash.exe", "C:/Program Files/Git/usr/bin/bash.exe", "C:/Program Files (x86)/Git/bin/bash.exe"]
+  : ["/opt/homebrew/bin/bash", "/usr/local/bin/bash", "/usr/bin/bash", "/bin/bash"];
 let bashPath = "bash";
-for (const c of candidates) {
+for (const c of bashCandidates) {
   try { fs.accessSync(c, fs.constants.X_OK); bashPath = c; break; } catch {}
 }
 const s = JSON.parse(fs.readFileSync(p, 'utf8'));
-s.statusLine = { type: "command", command: `"${bashPath}" "${sp}"`, padding: 1 };
+if (isWin) {
+  const winBash = bashPath.replace(/\//g, '\\');
+  s.statusLine = {
+    type: "command",
+    command: `& "${winBash}" "${sp}"; exit $LASTEXITCODE`,
+    padding: 1
+  };
+} else {
+  s.statusLine = { type: "command", command: `"${bashPath}" "${sp}"`, padding: 1 };
+}
 fs.writeFileSync(p, JSON.stringify(s, null, 2) + '\n');
-console.log("  statusLine ->", sp);
+console.log("  statusLine ->", sp, "(", isWin ? "pwsh-wrapped" : "bash", ")");
 NODE_EOF
 
 # 7. ensure skillOverrides present (template ships them, but re-merge in case user has older settings)
@@ -141,36 +147,44 @@ NODE_EOF
 # (Claude Desktop local-agent-mode reads hooks from rpm-installed plugins or user settings;
 #  user settings path is the more reliable activation route across environments)
 echo "[8/9] injecting hooks block into user settings..."
-# Windows Desktop App workaround (claude-code issue #22700):
-# Desktop's hook runner uses system PATH (Machine), which Git for Windows
-# default install does NOT populate with bash.exe. Use FULL bash path.
+# Windows Desktop App: per https://code.claude.com/docs/ko/hooks-guide
+# Windows hooks use pwsh (`shell: "powershell"`) wrapping `& "bash.exe" "script.sh"; exit $LASTEXITCODE`.
+# This preserves bash exit codes (0/2) through pwsh and uses Anthropic's
+# documented Windows pattern instead of relying on system PATH bash resolution.
 SETTINGS_PATH="$CLAUDE_DIR/settings.json" REPO_DIR="$REPO_DIR_FWD" node - <<'NODE_EOF'
 const fs = require('fs');
 const p = process.env.SETTINGS_PATH;
 const repo = process.env.REPO_DIR;
+const isWin = process.platform === "win32";
 const s = JSON.parse(fs.readFileSync(p, 'utf8'));
 
-// Detect bash full path (Windows Desktop App needs absolute path; macOS/Linux fine with `bash`)
-const candidates = [
-  "C:/Program Files/Git/bin/bash.exe",
-  "C:/Program Files/Git/usr/bin/bash.exe",
-  "C:/Program Files (x86)/Git/bin/bash.exe",
-  "/opt/homebrew/bin/bash",
-  "/usr/local/bin/bash",
-  "/usr/bin/bash",
-  "/bin/bash",
-];
-let bashPath = "bash";  // fallback
-for (const c of candidates) {
+const bashCandidates = isWin
+  ? ["C:/Program Files/Git/bin/bash.exe", "C:/Program Files/Git/usr/bin/bash.exe", "C:/Program Files (x86)/Git/bin/bash.exe"]
+  : ["/opt/homebrew/bin/bash", "/usr/local/bin/bash", "/usr/bin/bash", "/bin/bash"];
+let bashPath = "bash";
+for (const c of bashCandidates) {
   try { fs.accessSync(c, fs.constants.X_OK); bashPath = c; break; } catch {}
 }
-console.log("  bash:", bashPath);
+console.log("  bash:", bashPath, "(", isWin ? "pwsh-wrap" : "direct", ")");
 
-const mkHook = (script) => ({
-  type: "command",
-  command: `"${bashPath}" "${repo}/plugins/harim-base/hooks/${script}"`,
-  timeout: 5
-});
+const mkHook = (script) => {
+  const scriptPath = `${repo}/plugins/harim-base/hooks/${script}`;
+  if (isWin) {
+    const winBash = bashPath.replace(/\//g, '\\');
+    return {
+      type: "command",
+      command: `& "${winBash}" "${scriptPath}"; exit $LASTEXITCODE`,
+      shell: "powershell",
+      timeout: 5
+    };
+  }
+  return {
+    type: "command",
+    command: `"${bashPath}" "${scriptPath}"`,
+    timeout: 5
+  };
+};
+
 s.hooks = s.hooks || {};
 s.hooks.PreToolUse = [{ matcher: "Bash", hooks: [mkHook("strip-claude-attribution.sh")] }];
 s.hooks.PostToolUse = [{ matcher: "", hooks: [mkHook("doom-loop-detect.sh")] }];
