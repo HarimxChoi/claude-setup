@@ -70,6 +70,21 @@ EOF
   exit 2
 fi
 
+# Pattern 2b: worktree add with Claude/Anthropic branch name
+# `git worktree add <path> -b claude/foo` or `git worktree add -b claude/foo <path>`
+if echo "$FLAT" | grep -qiE 'git[[:space:]]+worktree[[:space:]]+add.*(claude-code|anthropic|claude/)'; then
+  cat >&2 <<'EOF'
+[strip-claude-attribution] BLOCKED: Claude/Anthropic substring in worktree branch name.
+
+Use neutral worktree branch names:
+  GOOD: git worktree add ../wt-foo -b wt/foo
+        git worktree add ../wt-foo -b exp/anchor
+  BAD:  git worktree add ... -b claude/gifted-newton
+        git worktree add ... -b claude-code/...
+EOF
+  exit 2
+fi
+
 # Pattern 3: PR creation via gh CLI with Claude attribution
 if echo "$FLAT" | grep -qiE 'gh[[:space:]]+pr[[:space:]]+create.*(co-authored-by:[[:space:]]*claude|🤖[[:space:]]*generated|claude\.ai/code)'; then
   cat >&2 <<'EOF'
