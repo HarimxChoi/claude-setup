@@ -1,6 +1,6 @@
 # claude-setup
 
-개인용 Claude Code 환경 설정. clone 한 번에 어느 머신에서도 동일하게 재현. Hooks 기반 익명성 강제, user-level skill 6개, DSSP 기반 multi-track priors까지 포함.
+개인용 Claude Code 환경 설정. clone 한 번에 어느 머신에서도 동일하게 재현. Hooks 기반 결정론적 가드, user-level skill 6개, DSSP 기반 multi-track priors 포함.
 
 [**English README →**](./README.md)
 
@@ -12,7 +12,7 @@
 ├── plugins/
 │   └── harim-base/
 │       ├── .claude-plugin/plugin.json
-│       ├── hooks/                      # PreToolUse 익명성 hook
+│       ├── hooks/                      # PreToolUse 가드 hook
 │       ├── scripts/statusline.sh       # status bar (모델 + 브랜치 + ctx %)
 │       └── skills/                     # 6 user-level skills
 │           ├── dssp-audit/
@@ -36,11 +36,10 @@
 - `~/.claude/settings.json`: permissions baseline (`rm -rf`, `curl`, `sudo`, `pip install`, `npm publish`, `.env` 읽기 deny), 좁은 allow list, `includeCoAuthoredBy: false`, statusLine.
 - `~/.claude/CLAUDE.md`: 짧은 응답, 최소 diff, KR-EN bilingual, Monogram commit hygiene.
 
-### Layer 4. 익명성 Hooks (결정론적 강제)
-`harim-base/hooks/strip-claude-attribution.sh`가 차단:
-- `git commit` 메시지에 `Co-Authored-By: Claude`, `🤖 Generated`, `claude.ai/code`, `noreply@anthropic.com`
-- `git branch / checkout -b / push origin`에 `claude-code/`, `anthropic/`, `claude/`
-- `gh pr create`의 동일 패턴
+### Layer 4. Hooks (결정론적 가드)
+- `strip-claude-attribution.sh`: commit 메시지 / branch / PR 제목 형식 강제 (monogram-commit 가이드 주입)
+- `doom-loop-detect.sh`: PostToolUse에서 action signature 추적, `[A,A,A]` 또는 `[A,B,C]·[A,B,C]` 감지 시 reflection inject
+- `pending-todos-gate.sh`: Stop 시 TodoWrite open item 있으면 종료 차단
 
 JSON parse는 Node (Claude Code 전제조건)로 처리, jq fallback. silent fail-open 안 함.
 
@@ -98,7 +97,7 @@ Claude Code 재시작. `~/.claude/settings.json`의 `pluginMarketplaces`, `enabl
 /plugin marketplace list        # harim-marketplace
 ```
 
-`Co-Authored-By: Claude`가 들어간 commit을 시도하면 익명성 hook이 차단함.
+commit 메시지에서 monogram-commit 형식을 따르지 않으면 hook이 가이드를 inject.
 
 ## Layer 구조
 
@@ -108,7 +107,7 @@ Claude Code 재시작. `~/.claude/settings.json`의 `pluginMarketplaces`, `enabl
 | 1. CLAUDE.md | priors (user + project template 4종) | ✓ |
 | 2. Skills + Subagents | capabilities (skill 6개) | ✓ |
 | 3. MCP | 외부 도구 (템플릿) | ✓ |
-| 4. Hooks | 결정론적 강제 (익명성) | ✓ |
+| 4. Hooks | 결정론적 가드 (commit 형식, doom-loop, pending-todos) | ✓ |
 | 5. Memory | auto-memory + project memory | (자동) |
 
 ## License

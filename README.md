@@ -1,17 +1,16 @@
 # claude-setup
 
-Portable Claude Code setup. Auto-strip attribution + doom-loop detection + completion gate + 6 user-level skills.
+Portable Claude Code setup. Doom-loop detection + completion gate + 6 user-level skills + 4 project templates.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 ## What you get
 
-- **Auto-anonymity** — strips `Co-Authored-By: Claude` and AI footer leakage from commits, branches, and `gh pr create`
-- **Doom-loop detection** — interrupts when the agent repeats `A, A, A` or cycles `A, B, C, A, B, C`
-- **Pending-todos gate** — blocks `Stop` when TodoWrite has open items
-- **6 user-level skills** — `/audit`, `/reflect`, `/commit`, `/skills`, plus `live-swe-reflection` and `ecc-prevent-mode` as priors
-- **4 project templates** — `.ml`, `.research`, `.tool`, `.readonly` CLAUDE.md
-- **Multi-tier routing** — LLM-as-router ceiling is ~50%; lifecycle hooks + priors + slash commands lift effective coverage to ~85%
+- **Doom-loop detection**: interrupts when the agent repeats `A, A, A` or cycles `A, B, C, A, B, C`
+- **Pending-todos gate**: blocks `Stop` when TodoWrite has open items
+- **6 user-level skills**: `/audit`, `/reflect`, `/commit`, `/skills`, plus `live-swe-reflection` and `ecc-prevent-mode` as priors
+- **4 project templates**: `.ml`, `.research`, `.tool`, `.readonly` CLAUDE.md
+- **Multi-tier routing**: LLM-as-router ceiling is ~50%; lifecycle hooks + priors + slash commands lift effective coverage to ~85%
 
 ## Install
 
@@ -27,10 +26,6 @@ powershell ./install.ps1   # Windows
 
 Restart Claude Code or Claude Desktop. Verify with `/plugin list`.
 
-## Verify anonymity
-
-Try a commit with `Co-Authored-By: Claude` in the body. The pre-Bash hook blocks it.
-
 ## Layered architecture
 
 | Layer | What | Status |
@@ -39,7 +34,7 @@ Try a commit with `Co-Authored-By: Claude` in the body. The pre-Bash hook blocks
 | 1 — CLAUDE.md | priors (user + 4 project templates) | ✓ |
 | 2 — Skills + Subagents | 6 skills + verifier-runner | ✓ |
 | 3 — MCP | template (.mcp.json with 6 servers) | ✓ |
-| 4 — Hooks | anonymity + doom-loop + pending-todos | ✓ |
+| 4 — Hooks | doom-loop + pending-todos + commit hygiene | ✓ |
 | 5 — Memory | auto-memory + project memory | (built-in) |
 
 ## Skills
@@ -57,7 +52,7 @@ Try a commit with `Co-Authored-By: Claude` in the body. The pre-Bash hook blocks
 
 | Hook | Event | Role |
 |---|---|---|
-| `strip-claude-attribution.sh` | PreToolUse Bash | Blocks attribution leakage; injects monogram-commit guidance |
+| `strip-claude-attribution.sh` | PreToolUse Bash | Enforces commit message format; injects monogram-commit guidance |
 | `doom-loop-detect.sh` | PostToolUse all | Logs action signatures; on `[A,A,A]` or `[A,B,C]·[A,B,C]` injects reflection |
 | `pending-todos-gate.sh` | Stop | Scans transcript for TodoWrite; blocks termination if pending items exist |
 
