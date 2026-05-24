@@ -1,6 +1,6 @@
 # claude-setup
 
-휴대용 Claude Code 세팅. 어떤 디바이스에서든 clone + install로 일관된 에이전트 환경 복원 — hook 강제 익명성, 6개 user-level skill, DSSP 기반 multi-track priors.
+개인용 Claude Code 환경 설정. clone 한 번에 어느 머신에서도 동일하게 재현. Hooks 기반 익명성 강제, user-level skill 6개, DSSP 기반 multi-track priors까지 포함.
 
 [**English README →**](./README.md)
 
@@ -30,21 +30,21 @@
 └── install.ps1                         # Windows native PowerShell
 ```
 
-## 제공 항목
+## 구성
 
-### Layer 0/1 — Settings + priors (자동 배포)
-- `~/.claude/settings.json` — permissions baseline (`rm -rf`, `curl`, `sudo`, `pip install`, `npm publish`, `.env` 읽기 deny), 좁은 allow list, `includeCoAuthoredBy: false`, statusLine.
-- `~/.claude/CLAUDE.md` — 짧은 응답, 최소 diff, KR-EN bilingual, Monogram commit hygiene.
+### Layer 0/1. Settings + priors (자동 배포)
+- `~/.claude/settings.json`: permissions baseline (`rm -rf`, `curl`, `sudo`, `pip install`, `npm publish`, `.env` 읽기 deny), 좁은 allow list, `includeCoAuthoredBy: false`, statusLine.
+- `~/.claude/CLAUDE.md`: 짧은 응답, 최소 diff, KR-EN bilingual, Monogram commit hygiene.
 
-### Layer 4 — 익명성 hook (결정론적 강제)
+### Layer 4. 익명성 Hooks (결정론적 강제)
 `harim-base/hooks/strip-claude-attribution.sh`가 차단:
 - `git commit` 메시지에 `Co-Authored-By: Claude`, `🤖 Generated`, `claude.ai/code`, `noreply@anthropic.com`
 - `git branch / checkout -b / push origin`에 `claude-code/`, `anthropic/`, `claude/`
 - `gh pr create`의 동일 패턴
 
-Node (Claude Code 전제조건) 사용해 JSON parse — jq fallback. silent fail-open 없음.
+JSON parse는 Node (Claude Code 전제조건)로 처리, jq fallback. silent fail-open 안 함.
 
-### Layer 2 — 6 user-level skills
+### Layer 2. user-level skills 6개
 
 | Skill | 종류 | 활성화 시점 |
 |---|---|---|
@@ -55,27 +55,27 @@ Node (Claude Code 전제조건) 사용해 JSON parse — jq fallback. silent fai
 | `ecc-prevent-mode` | capability uplift | CI gate, anti-pattern list, hook profile, install manifest 설계 |
 | `forgecode-recover-mode` | capability uplift | runtime error, doom-loop 감지, pending-todos gate |
 
-Skills는 Claude Code가 `plugins/harim-base/skills/<name>/SKILL.md`에서 자동 발견.
+Claude Code가 `plugins/harim-base/skills/<name>/SKILL.md`에서 자동으로 로드함.
 
-### Layer 1 (프로젝트) — 4개 CLAUDE.md 템플릿
+### Layer 1 (프로젝트). CLAUDE.md 템플릿 4종
 
-매칭되는 것을 `<project>/CLAUDE.md`로 복사:
-- `CLAUDE.md.ml` — production ML (KPI discipline, EC2/local 하이브리드)
-- `CLAUDE.md.research` — paper / research corpus (pre-registration, bootstrap CI)
-- `CLAUDE.md.tool` — npm/pip 패키지 (semver, README/ko parallel)
-- `CLAUDE.md.readonly` — 외부 pipeline 소유 repo (e.g., Monogram); Claude는 read-only
+용도에 맞는 것을 `<project>/CLAUDE.md`로 복사:
+- `CLAUDE.md.ml`: production ML (KPI discipline, EC2/local 하이브리드)
+- `CLAUDE.md.research`: paper / research corpus (pre-registration, bootstrap CI)
+- `CLAUDE.md.tool`: npm/pip 패키지 (semver, README/ko parallel)
+- `CLAUDE.md.readonly`: 외부 pipeline 소유 repo (예: Monogram). Claude는 read-only
 
-### Layer 3 — `.mcp.json` 템플릿 (project-scope)
+### Layer 3. `.mcp.json` 템플릿 (project-scope)
 
-`templates/project/.mcp.json`에 6개 MCP server (github, filesystem, memory, fetch, read-website, google-surf) + `${VAR}` env placeholder. project root에 복사 후 `.env` 채우기.
+`templates/project/.mcp.json`에 MCP server 6개 (github, filesystem, memory, fetch, read-website, google-surf), `${VAR}` env placeholder 포함. project root에 복사 후 `.env` 채우면 됨.
 
 ### Path-scoped rules
 
-`templates/rules/{python, markdown, tex}.md` — project의 `.claude/rules/`에 복사하면 매칭 파일에서만 활성.
+`templates/rules/{python, markdown, tex}.md`. project의 `.claude/rules/`에 복사하면 매칭 파일에서만 활성화.
 
 ### statusLine
 
-`bash plugins/harim-base/scripts/statusline.sh` — `[model] @branch ctx N%` 표시 (green/yellow/red threshold). 설치 스크립트가 자동 설정.
+`bash plugins/harim-base/scripts/statusline.sh`. `[model] @branch ctx N%` 표시 (green/yellow/red threshold). 설치 스크립트에서 자동 설정함.
 
 ## 설치
 
@@ -89,7 +89,7 @@ bash install.sh         # Mac/Linux/Git Bash
 powershell ./install.ps1   # Windows native
 ```
 
-Claude Code 재시작. Marketplace + plugin + statusLine이 `~/.claude/settings.json`의 `pluginMarketplaces` + `enabledPlugins` + `statusLine` 항목으로 자동 활성화.
+Claude Code 재시작. `~/.claude/settings.json`의 `pluginMarketplaces`, `enabledPlugins`, `statusLine`이 자동으로 잡힘.
 
 ## 검증
 
@@ -98,18 +98,18 @@ Claude Code 재시작. Marketplace + plugin + statusLine이 `~/.claude/settings.
 /plugin marketplace list        # harim-marketplace
 ```
 
-`Co-Authored-By: Claude` 포함 commit 시도 — 익명성 hook이 차단.
+`Co-Authored-By: Claude`가 들어간 commit을 시도하면 익명성 hook이 차단함.
 
 ## Layer 구조
 
 | Layer | 메커니즘 | 본 repo |
 |---|---|---|
-| 0 — settings.json | 권한, 모델, env, statusLine | ✓ |
-| 1 — CLAUDE.md | priors (user + 4 project templates) | ✓ |
-| 2 — Skills + Subagents | capabilities (6 skills) | ✓ |
-| 3 — MCP | 외부 도구 (템플릿) | ✓ |
-| 4 — Hooks | 결정론적 강제 (익명성) | ✓ |
-| 5 — Memory | auto-memory + project memory | (자동) |
+| 0. settings.json | 권한, 모델, env, statusLine | ✓ |
+| 1. CLAUDE.md | priors (user + project template 4종) | ✓ |
+| 2. Skills + Subagents | capabilities (skill 6개) | ✓ |
+| 3. MCP | 외부 도구 (템플릿) | ✓ |
+| 4. Hooks | 결정론적 강제 (익명성) | ✓ |
+| 5. Memory | auto-memory + project memory | (자동) |
 
 ## License
 
