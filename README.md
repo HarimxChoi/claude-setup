@@ -1,98 +1,117 @@
 # claude-setup
 
-Portable Claude Code setup. Doom-loop detection + completion gate + 6 user-level skills + 4 project templates.
+[한국어](./README.ko.md) | English
+
+> A portable Claude Code operator layer for recovery, completion checks, reusable skills, and project-specific working rules.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-## What you get
+## Why
 
-- **Doom-loop detection**: interrupts when the agent repeats `A, A, A` or cycles `A, B, C, A, B, C`
-- **Pending-todos gate**: blocks `Stop` when TodoWrite has open items
-- **6 user-level skills**: `/audit`, `/reflect`, `/commit`, `/skills`, plus `live-swe-reflection` and `ecc-prevent-mode` as priors
-- **4 project templates**: `.ml`, `.research`, `.tool`, `.readonly` CLAUDE.md
-- **Multi-tier routing**: LLM-as-router ceiling is ~50%; lifecycle hooks + priors + slash commands lift effective coverage to ~85%
+An agent can behave differently on every machine when permissions, instructions, hooks, and skills are configured by hand. Repeated tool calls can also consume a session without changing the approach, while unfinished work can disappear behind an early stop. ML, research, package, and read-only repositories need different working rules, but those rules should remain reusable.
+
+## How
+
+The Windows and POSIX installers back up the current user configuration, then deploy the same settings, hooks, skills, commands, status line, and project templates. Three lifecycle hooks watch for repeated tool patterns, surface unfinished TodoWrite items at stop time, and enforce neutral Git metadata. Six reusable skills, four slash commands, a verifier subagent, and four project priors provide the deeper recovery and task-specific behavior.
+
+## Result
+
+The same Claude Code working environment can be restored on Windows, macOS, or Linux from one repository. Failure states become explicit recovery prompts, unfinished work is surfaced before the session exits, and each repository can opt into production-ML, research, tool, or read-only rules without rebuilding the setup from scratch.
+
+## What is installed
+
+| Layer | Installed behavior |
+|---|---|
+| User settings | Permission baseline, status line, skill routing |
+| Hooks | Repetition detection, pending-work gate, Git metadata guard |
+| Skills | DSSP audit, GEPA reflection, runtime recovery, prevent-mode, reflection, commit style |
+| Commands | `/audit`, `/reflect`, `/commit`, `/skills` |
+| Agent | `verifier-runner` for isolated test and build output |
+| Project priors | `ml`, `research`, `tool`, and `readonly` CLAUDE.md templates |
+| Rules | Path-scoped Python, Markdown, and LaTeX rules |
 
 ## Install
 
-Prereqs: Node 18+, git, Claude Code.
+Prerequisites: Node 18+, Git, Claude Code, and Git Bash on Windows.
 
 ```bash
 git clone https://github.com/HarimxChoi/claude-setup ~/claude-setup
 cd ~/claude-setup
-bash install.sh         # Mac/Linux/Git Bash
+bash install.sh                 # macOS, Linux, or Git Bash
 # or
-powershell ./install.ps1   # Windows
+powershell ./install.ps1       # Windows PowerShell
 ```
 
-Restart Claude Code or Claude Desktop. Verify with `/plugin list`.
+The installer copies an existing `~/.claude/settings.json` and `~/.claude/CLAUDE.md` to timestamped backup files before replacing them. Restart Claude Code or Claude Desktop after installation.
 
-## Layered architecture
+```text
+/plugin list
+/plugin marketplace list
+```
 
-| Layer | What | Status |
+## Recovery and completion hooks
+
+| Hook | Event | Behavior |
 |---|---|---|
-| 0 — settings.json | permissions, model, env, statusLine | ✓ |
-| 1 — CLAUDE.md | priors (user + 4 project templates) | ✓ |
-| 2 — Skills + Subagents | 6 skills + verifier-runner | ✓ |
-| 3 — MCP | template (.mcp.json with 6 servers) | ✓ |
-| 4 — Hooks | doom-loop + pending-todos + commit hygiene | ✓ |
-| 5 — Memory | auto-memory + project memory | (built-in) |
+| `doom-loop-detect.sh` | After every tool call | Detects `A, A, A` or `A, B, C, A, B, C` action-signature patterns and injects a prompt to change the underlying assumption or approach |
+| `pending-todos-gate.sh` | Stop | Intercepts the first stop when the latest TodoWrite state still contains pending items and returns their names |
+| `strip-claude-attribution.sh` | Before Bash | Blocks disallowed AI-attribution strings in commits, branches, worktrees, and PR commands; injects the short commit format before `git commit` |
 
-## Skills
+The Git metadata hook supports `HOOK_PROFILE=minimal|standard|strict`; `standard` is the default.
 
-| Skill | Tier | Invocation |
-|---|---|---|
-| `monogram-commit` | T1 lifecycle | Auto on `git commit`; `/commit` for explicit |
-| `forgecode-recover-mode` | T1 lifecycle | Auto via doom-loop / pending-todos hook |
-| `live-swe-reflection` | T2 prior | Mentioned in project CLAUDE.md |
-| `ecc-prevent-mode` | T2 prior | Mentioned in project CLAUDE.md |
-| `dssp-audit` | T3 + T4 | `/audit` |
-| `gepa-reflection` | T3 + T4 | `/reflect` |
+## Permission baseline
 
-## Hooks
+The user template allows read-oriented work and common test commands while denying broad or high-impact commands such as recursive deletion, `sudo`, force push, hard reset, publishing, and secret-file reads. Review [`templates/user/settings.json`](./templates/user/settings.json) before installation and adapt it to the machine's trust boundary.
 
-| Hook | Event | Role |
-|---|---|---|
-| `strip-claude-attribution.sh` | PreToolUse Bash | Enforces commit message format; injects monogram-commit guidance |
-| `doom-loop-detect.sh` | PostToolUse all | Logs action signatures; on `[A,A,A]` or `[A,B,C]·[A,B,C]` injects reflection |
-| `pending-todos-gate.sh` | Stop | Scans transcript for TodoWrite; blocks termination if pending items exist |
+## Reusable skills
 
-`HOOK_PROFILE` env: `minimal` / `standard` (default) / `strict`.
+| Skill | Purpose |
+|---|---|
+| `forgecode-recover-mode` | Bounded recovery after errors, repeated actions, or incomplete work |
+| `live-swe-reflection` | One focused reflection when an approach is repeating without progress |
+| `ecc-prevent-mode` | Design-time gates, anti-patterns, and hook profiles |
+| `dssp-audit` | Agent activation and mechanism-coverage audit |
+| `gepa-reflection` | Prompt revision from observed failures and feedback |
+| `monogram-commit` | Short, noun-centric commit, branch, and PR naming |
 
-## Project templates
+## Project priors
 
-Copy the matching `CLAUDE.md.<type>` to `<project>/CLAUDE.md`:
+Copy the matching template to `<project>/CLAUDE.md`:
 
-- `.ml` — production ML (KPI discipline, no aggregate-only claims)
-- `.research` — paper / research corpus (pre-registration, bootstrap CI)
-- `.tool` — npm / pip package (semver, README/ko parallel, SSRF guards)
-- `.readonly` — Claude stays read-only (when repo is owned by external pipeline)
+- [`CLAUDE.md.ml`](./templates/project/CLAUDE.md.ml): production ML, KPI provenance, and hybrid local/remote execution
+- [`CLAUDE.md.research`](./templates/project/CLAUDE.md.research): preregistration, uncertainty, and research evidence
+- [`CLAUDE.md.tool`](./templates/project/CLAUDE.md.tool): npm/pip packaging, semver, README parity, and network safety
+- [`CLAUDE.md.readonly`](./templates/project/CLAUDE.md.readonly): read-only work in repositories owned by another pipeline
 
-## Why deterministic routing
+## Evaluate a skill
 
-LLM-as-router for skills has a measured ~50% activation ceiling (devty 2026 empirical study). This setup combines T1 lifecycle hooks (100% activation), T2 task-typed CLAUDE.md priors, and T3 slash commands to push effective coverage to ~85% without the latency of forced-eval `UserPromptSubmit` hooks.
-
-## Skill quality scoring (optional)
-
-`scripts/eval-skills.sh` wraps `wshobson/agents` `plugin-eval` with Wilson / bootstrap / Clopper-Pearson CI. One-time setup:
+[`scripts/eval-skills.sh`](./scripts/eval-skills.sh) wraps `wshobson/agents` PluginEval. After installing that external harness, run either the standard or deeper evaluation profile:
 
 ```bash
 git clone https://github.com/wshobson/agents.git ~/wshobson-agents
 cd ~/wshobson-agents/plugins/plugin-eval && uv sync --extra llm
 
 cd ~/claude-setup
-scripts/eval-skills.sh standard      # ~$0.30 all 6 skills
-scripts/eval-skills.sh deep          # ~$3 deep MC
+scripts/eval-skills.sh standard
+scripts/eval-skills.sh deep
 ```
 
-Output: per-skill markdown reports + summary table.
+The script writes one Markdown report per skill and a summary table. It also accepts a skill name as the second argument to evaluate only that skill.
 
-## Version history
+## Repository layout
 
-- v0.6.2 — Windows Desktop App hook fix ([#22700](https://github.com/anthropics/claude-code/issues/22700))
-- v0.6.0 — UQ.3 lift: PluginEval-based skill quality scoring
-- v0.5.0 — `git push --force`, `git reset --hard`, `chmod 777`, `find -delete` deny list
-- v0.4.0 — doom-loop detection, pending-todos gate, verifier-runner subagent
+```text
+plugins/harim-base/hooks/       lifecycle hooks
+plugins/harim-base/skills/      six reusable skills
+plugins/harim-base/commands/    four slash commands
+plugins/harim-base/agents/      verifier-runner
+templates/user/                 user settings and CLAUDE.md
+templates/project/              four project priors and MCP template
+templates/rules/                path-scoped rules
+install.sh                      POSIX installer
+install.ps1                     Windows installer
+```
 
 ## License
 
-MIT.
+MIT
